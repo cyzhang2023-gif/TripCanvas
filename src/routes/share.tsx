@@ -68,7 +68,7 @@ function Share() {
       <div className="mx-5 mt-3 overflow-hidden rounded-3xl bg-card shadow-[var(--shadow-glow)]">
         <div className="relative">
           <img
-            src={coverUrl(trip.cover)}
+            src={trip.coverUrl || coverUrl(trip.cover)}
             alt={trip.name}
             className="h-72 w-full object-cover"
             loading="lazy"

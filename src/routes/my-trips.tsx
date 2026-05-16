@@ -106,7 +106,7 @@ function TripCard({ trip }: { trip: Trip }) {
     <article className="relative overflow-hidden rounded-[18px] shadow-[0_10px_26px_rgba(38,43,70,.10)]">
       {/* Full background image */}
       <img
-        src={coverUrl(trip.cover)}
+        src={trip.coverUrl || coverUrl(trip.cover)}
         alt={trip.name}
         loading="lazy"
         className="absolute inset-0 h-full w-full object-cover"
