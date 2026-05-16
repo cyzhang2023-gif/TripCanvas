@@ -1,0 +1,269 @@
+{
+  "name": "Routey - 自动爬取 + AI 解析 + 入库",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      },
+      "id": "node-schedule",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Node 2: 生成爬取任务列表\n// 每个 item 包含一个目的地 + 搜索关键词\n\nconst destinations = [\n  { city: \"东京\", country: \"日本\", destination: \"日本\",\n    keywords: [\"东京citywalk攻略\", \"东京美食探店路线\", \"东京5日游行程\"] },\n  { city: \"京都\", country: \"日本\", destination: \"日本\",\n    keywords: [\"京都寺庙游览路线\", \"京都和服体验攻略\"] },\n  { city: \"曼谷\", country: \"泰国\", destination: \"泰国\",\n    keywords: [\"曼谷夜市美食攻略\", \"曼谷4日游行程\"] },\n  { city: \"首尔\", country: \"韩国\", destination: \"韩国\",\n    keywords: [\"首尔弘大citywalk\", \"首尔美食打卡路线\"] },\n  { city: \"巴黎\", country: \"法国\", destination: \"法国\",\n    keywords: [\"巴黎5日游攻略\", \"巴黎博物馆路线\"] },\n  { city: \"纽约\", country: \"美国\", destination: \"美国\",\n    keywords: [\"纽约自由行攻略\", \"纽约曼哈顿地区美食\"] },\n  { city: \"新加坡\", country: \"新加坡\", destination: \"新加坡\",\n    keywords: [\"新加坡3日精华游\", \"新加坡亲子游路线\"] },\n  { city: \"巴厘岛\", country: \"印度尼西亚\", destination: \"印度尼西亚\",\n    keywords: [\"巴厘岛度假路线\", \"巴厘岛乌布德攻略\"] }\n];\n\n// 每次随机选 3 个目的地，每个取 1 个关键词\nconst shuffled = destinations.sort(() => Math.random() - 0.5).slice(0, 3);\nconst tasks = shuffled.map(d => ({\n  json: {\n    city: d.city,\n    country: d.country,\n    destination: d.destination,\n    keyword: d.keywords[Math.floor(Math.random() * d.keywords.length)]\n  }\n}));\n\nreturn tasks;"
+      },
+      "id": "node-gen-tasks",
+      "name": "Function",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.deepseek.com/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"deepseek-chat\",\n  \"temperature\": 0.2,\n  \"max_tokens\": 4096,\n  \"response_format\": {\"type\": \"json_object\"},\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a professional travel itinerary engine. Return STRICT VALID JSON only.\\nRequired JSON structure:\\n{\\n  \\\"route_title\\\": \\\"行程标题\\\",\\n  \\\"city\\\": \\\"城市名\\\",\\n  \\\"country\\\": \\\"国家\\\",\\n  \\\"route_theme\\\": \\\"citywalk|food|beach|luxury|nature|shopping|culture\\\",\\n  \\\"mood\\\": \\\"氛围描述\\\",\\n  \\\"summary\\\": \\\"50字以内的路线概述\\\",\\n  \\\"days_count\\\": 5,\\n  \\\"budget_level\\\": \\\"low|medium|high\\\",\\n  \\\"travel_type\\\": \\\"solo|couple|family|friends\\\",\\n  \\\"pace\\\": \\\"relaxed|normal|fast\\\",\\n  \\\"best_time\\\": \\\"spring|summer|autumn|winter|all\\\",\\n  \\\"tags\\\": \\\"标签1,标签2,标签3\\\",\\n  \\\"cover_image_query\\\": \\\"English search term for cover photo\\\",\\n  \\\"days\\\": [\\n    {\\n      \\\"day\\\": 1,\\n      \\\"title\\\": \\\"Day 1 标题\\\",\\n      \\\"summary\\\": \\\"当日概述\\\",\\n      \\\"places\\\": [\\n        {\\n          \\\"time\\\": \\\"09:00\\\",\\n          \\\"name\\\": \\\"地点名称\\\",\\n          \\\"description\\\": \\\"活动描述\\\",\\n          \\\"intro\\\": \\\"50字以内的详细介绍\\\",\\n          \\\"category\\\": \\\"景点|美食|购物|住宿|休闲\\\",\\n          \\\"rating\\\": 4.5,\\n          \\\"price\\\": \\\"¥800\\\",\\n          \\\"duration_min\\\": 90,\\n          \\\"tags\\\": \\\"必去,打卡\\\",\\n          \\\"lat\\\": 35.6762,\\n          \\\"lng\\\": 139.6503,\\n          \\\"address\\\": \\\"Shinjuku, Tokyo, Japan\\\",\\n          \\\"image_query\\\": \\\"Shinjuku Gyoen garden\\\"\\n        }\\n      ]\\n    }\\n  ]\\n}\\n\\nRules:\\n1. Each day must have 5-8 places covering: 景点, 美食, 购物, 住宿, 休闲\\n2. lat/lng must be REAL WGS84 coordinates, accurate to 4 decimal places\\n3. price in local currency\\n4. rating range 3.0-5.0\\n5. category MUST be one of: 景点|美食|购物|住宿|休闲\\n6. Places in same day should be geographically close\\n7. Time from 09:00 to 21:00, logically ordered\\n8. Total places across all days >= 12\\n9. Return ONLY valid JSON, no markdown\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"请为 {{ $json.city }}({{ $json.country }}) 生成一条 5 天精品旅行路线。\\n要求：\\n- 每天 5-8 个地点\\n- 覆盖景点、美食、购物、住宿、休闲\\n- 包含真实 GPS 坐标\\n- 关键词：{{ $json.keyword }}\"\n    }\n  ]\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 60000
+        }
+      },
+      "id": "node-deepseek",
+      "name": "DeepSeek AI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "DeepSeek API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Node 5: 解析 route 主信息\nconst raw = $input.first().json;\nconst content = raw.choices?.[0]?.message?.content || \"\";\n\n// Clean markdown wrapper if present\nconst cleaned = content.replace(/```json/g, \"\").replace(/```/g, \"\").trim();\n\nlet data;\ntry {\n  data = JSON.parse(cleaned);\n} catch (e) {\n  const match = cleaned.match(/\\{[\\s\\S]*\\}/);\n  if (match) {\n    data = JSON.parse(match[0]);\n  } else {\n    throw new Error(\"Failed to parse AI response as JSON: \" + cleaned.substring(0, 200));\n  }\n}\n\n// Get city/destination from Node 2 task info\nconst taskInfo = $items(\"Function\")[0]?.json || {};\n\nreturn [{\n  json: {\n    route_title: data.route_title || taskInfo.keyword || \"\",\n    city: data.city || taskInfo.city || \"\",\n    country: data.country || taskInfo.country || \"\",\n    destination: taskInfo.destination || data.country || \"\",\n    route_theme: data.route_theme || \"\",\n    mood: data.mood || \"\",\n    places: JSON.stringify(data.days || []),\n    summary: data.summary || \"\",\n    raw_json: data,\n    source_url: taskInfo.source_url || \"\",\n    status: \"published\",\n    quality_score: 85,\n    target_user: data.travel_type || \"\",\n    best_time: data.best_time || \"\",\n    days_count: data.days_count || data.days?.length || null,\n    budget_level: data.budget_level || \"\",\n    travel_type: data.travel_type || \"\",\n    pace: data.pace || \"\",\n    tags: data.tags || \"\",\n    cover_url: \"\",\n    likes: 0\n  }\n}];"
+      },
+      "id": "node-parse-route",
+      "name": "Parse Route",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": "public",
+        "table": "routes",
+        "columns": "route_title,city,country,destination,route_theme,mood,places,summary,raw_json,source_url,status,quality_score,target_user,best_time,days_count,budget_level,travel_type,pace,tags,cover_url,likes",
+        "options": {
+          "returnFields": "*"
+        }
+      },
+      "id": "node-pg-routes",
+      "name": "Postgres Routes",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1100, 300],
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "TripCanvas Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Function1: 拆分 days\nconst routeId = $input.first().json.id;\nconst raw = $input.first().json.raw_json || {};\nconst days = raw.days || [];\n\nif (!routeId) {\n  throw new Error(\"No route_id returned from Postgres insert. Check Return Fields = *\");\n}\n\nif (days.length === 0) {\n  throw new Error(\"No days found in raw_json. AI response may be empty.\");\n}\n\nreturn days.map((day, index) => ({\n  json: {\n    route_id: routeId,\n    day_number: day.day || index + 1,\n    title: day.title || \"Day \" + (index + 1),\n    summary: day.summary || \"\",\n    places: day.places || []\n  }\n}));"
+      },
+      "id": "node-split-days",
+      "name": "Function1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1320, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": "public",
+        "table": "itinerary_days",
+        "columns": "route_id,day_number,title,summary",
+        "options": {
+          "returnFields": "id,route_id,day_number,title,summary"
+        }
+      },
+      "id": "node-pg-days",
+      "name": "Postgres1 Days",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1540, 300],
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "TripCanvas Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Function2: 拆分 places\nconst dayId = $input.first().json.id;\nconst dayNumber = $input.first().json.day_number;\n\n// Get places from Function1 output (which preserved them)\nconst function1Items = $items(\"Function1\");\nconst matched = function1Items.find(\n  item => String(item.json.day_number) === String(dayNumber)\n);\nconst places = matched?.json?.places || [];\n\nif (places.length === 0) {\n  return [];\n}\n\nreturn places.map((place, index) => ({\n  json: {\n    day_id: dayId,\n    place_name: place.name || place.place_name || \"\",\n    visit_time: place.time || place.visit_time || \"\",\n    duration_min: place.duration_min || null,\n    description: place.description || \"\",\n    intro: place.intro || \"\",\n    category: place.category || \"景点\",\n    rating: place.rating || null,\n    price: place.price || \"\",\n    tags: Array.isArray(place.tags) ? place.tags.join(\",\") : (place.tags || \"\"),\n    place_order: index + 1,\n    latitude: place.lat || null,\n    longitude: place.lng || null,\n    image_url: \"\",\n    address: place.address || \"\"\n  }\n}));"
+      },
+      "id": "node-split-places",
+      "name": "Function2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1760, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": "public",
+        "table": "itinerary_places",
+        "columns": "day_id,place_name,visit_time,duration_min,description,intro,category,rating,price,tags,place_order,latitude,longitude,image_url,address",
+        "options": {
+          "returnFields": "*"
+        }
+      },
+      "id": "node-pg-places",
+      "name": "Postgres2 Places",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1980, 300],
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "TripCanvas Postgres"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Function",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Function": {
+      "main": [
+        [
+          {
+            "node": "DeepSeek AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek AI": {
+      "main": [
+        [
+          {
+            "node": "Parse Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Route": {
+      "main": [
+        [
+          {
+            "node": "Postgres Routes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Routes": {
+      "main": [
+        [
+          {
+            "node": "Function1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Function1": {
+      "main": [
+        [
+          {
+            "node": "Postgres1 Days",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres1 Days": {
+      "main": [
+        [
+          {
+            "node": "Function2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Function2": {
+      "main": [
+        [
+          {
+            "node": "Postgres2 Places",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "Routey",
+      "id": "1"
+    }
+  ],
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
