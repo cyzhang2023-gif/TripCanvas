@@ -1047,7 +1047,7 @@ async function handleApiRequest(request: Request, env: unknown): Promise<Respons
             ${dest ? "AND r.destination = $1" : ""}
           GROUP BY r.id
           ORDER BY r.quality_score DESC, r.created_at DESC
-          LIMIT 20
+          LIMIT ${dest ? "20" : "60"}
         `;
         const n8nRes = await pool.query(n8nSql, dest ? [dest] : []);
         // Track per-city index to assign different covers for same-city routes

@@ -55,12 +55,12 @@ const seasonal = [
 ];
 
 const categories = [
-  { icon: Mountain, label: "自然风光", sub: "山川湖海", tint: "bg-emerald-100 text-emerald-600" },
-  { icon: Users, label: "亲子家庭", sub: "寓教于乐", tint: "bg-amber-100 text-amber-600" },
-  { icon: Building2, label: "城市漫游", sub: "街拍美食", tint: "bg-sky-100 text-sky-600" },
-  { icon: Landmark, label: "文化探索", sub: "历史人文", tint: "bg-violet-100 text-violet-600" },
-  { icon: TreePine, label: "户外探险", sub: "徒步露营", tint: "bg-green-100 text-green-600" },
-  { icon: Heart, label: "蜜月旅行", sub: "浪漫时光", tint: "bg-rose-100 text-rose-600" },
+  { icon: Mountain, label: "自然风光", sub: "山川湖海", tint: "bg-emerald-100 text-emerald-600", cat: "nature" },
+  { icon: Users, label: "亲子家庭", sub: "寓教于乐", tint: "bg-amber-100 text-amber-600", cat: "family" },
+  { icon: Building2, label: "城市漫游", sub: "街拍美食", tint: "bg-sky-100 text-sky-600", cat: "city" },
+  { icon: Landmark, label: "文化探索", sub: "历史人文", tint: "bg-violet-100 text-violet-600", cat: "culture" },
+  { icon: TreePine, label: "户外探险", sub: "徒步露营", tint: "bg-green-100 text-green-600", cat: "outdoor" },
+  { icon: Heart, label: "蜜月旅行", sub: "浪漫时光", tint: "bg-rose-100 text-rose-600", cat: "couple" },
 ];
 
 const calendar = [
@@ -306,8 +306,8 @@ function Index() {
       <section className="mt-3 px-3">
         <h2 className="text-[13px] font-bold px-1">你可能喜欢</h2>
         <div className="mt-1.5 flex gap-1.5 overflow-x-auto no-scrollbar">
-          {categories.map(({ icon: Icon, label, sub, tint }) => (
-            <button key={label} type="button" onClick={() => nav({ to: "/destinations" })}
+          {categories.map(({ icon: Icon, label, sub, tint, cat }) => (
+            <Link key={label} to="/explore" search={{ cat }}
               className="shrink-0 flex items-center gap-1.5 rounded-xl bg-card px-2 py-[7px] shadow-[var(--shadow-soft)]">
               <div className={`grid place-items-center h-6 w-6 rounded-md ${tint}`}>
                 <Icon className="h-3 w-3" />
@@ -316,7 +316,7 @@ function Index() {
                 <p className="text-[10px] font-semibold leading-none">{label}</p>
                 <p className="text-[7px] text-muted-foreground leading-none mt-[2px]">{sub}</p>
               </div>
-            </button>
+            </Link>
           ))}
           <button className="shrink-0 grid place-items-center w-6 rounded-full bg-card shadow-[var(--shadow-soft)]">
             <ChevronRight className="h-3 w-3 text-muted-foreground" />

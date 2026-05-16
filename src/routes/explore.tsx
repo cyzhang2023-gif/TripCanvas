@@ -28,14 +28,14 @@ const unsplash = (id: string, w = 600) =>
   `https://images.unsplash.com/${id}?w=${w}&q=80&auto=format&fit=crop`;
 
 export const Route = createFileRoute("/explore")({
-  validateSearch: z.object({ dest: z.string().default("日本") }),
+  validateSearch: z.object({ dest: z.string().default(""), cat: z.string().optional() }),
   component: ExplorePage,
   head: () => ({ meta: [{ title: "Routey · 热门路线" }] }),
 });
 
 /* ─── Types & data ─── */
 
-type CategoryKey = "hot" | "classic" | "family" | "couple" | "nature" | "city";
+type CategoryKey = "hot" | "classic" | "family" | "couple" | "nature" | "city" | "culture" | "outdoor";
 type Category = {
   key: CategoryKey;
   label: string;
@@ -56,39 +56,46 @@ const heroImages: Record<string, string> = {
 const categories: Category[] = [
   { key: "hot", label: "热门推荐", icon: Flame, color: "#5b45f3", matcher: () => true },
   {
-    key: "classic",
-    label: "经典必去",
-    icon: Star,
-    color: "#2e8cf0",
-    matcher: (r) => r.likes >= 7000 || r.tags.some((t) => ["经典", "都市"].includes(t)),
+    key: "nature",
+    label: "自然风光",
+    icon: Mountain,
+    color: "#5bd8a4",
+    matcher: (r) => r.tags.some((t) => ["自然", "自然风光", "山川湖海", "山水", "山海", "湖泊", "森林", "火山", "雪山", "海岛", "冰川", "湖光山色"].some((k) => t.includes(k))),
   },
   {
     key: "family",
     label: "亲子家庭",
     icon: UsersRound,
     color: "#5bd36b",
-    matcher: (r) => r.tags.some((t) => ["博物馆", "国家公园", "自然"].includes(t)),
-  },
-  {
-    key: "couple",
-    label: "情侣浪漫",
-    icon: Heart,
-    color: "#ff6681",
-    matcher: (r) => r.tags.some((t) => ["海岸", "海滩", "浪漫"].includes(t)),
-  },
-  {
-    key: "nature",
-    label: "自然风光",
-    icon: Mountain,
-    color: "#5bd8a4",
-    matcher: (r) => r.tags.some((t) => ["自然", "国家公园", "海岸", "海滩", "火山"].includes(t)),
+    matcher: (r) => r.tags.some((t) => ["亲子", "家庭", "博物馆", "动物"].some((k) => t.includes(k))),
   },
   {
     key: "city",
-    label: "城市",
+    label: "城市漫游",
     icon: LayoutGrid,
-    color: "#22242c",
-    matcher: (r) => r.tags.some((t) => ["都市", "博物馆", "百老汇", "好莱坞"].includes(t)),
+    color: "#2e8cf0",
+    matcher: (r) => r.tags.some((t) => ["citywalk", "城市漫步", "城市探索", "购物", "美食", "夜市"].some((k) => t.includes(k))),
+  },
+  {
+    key: "culture",
+    label: "文化探索",
+    icon: Star,
+    color: "#a855f7",
+    matcher: (r) => r.tags.some((t) => ["文化", "历史", "古城", "寺庙", "世界遗产", "人文", "宗教"].some((k) => t.includes(k))),
+  },
+  {
+    key: "outdoor",
+    label: "户外探险",
+    icon: Footprints,
+    color: "#22c55e",
+    matcher: (r) => r.tags.some((t) => ["徒步", "探险", "冲浪", "海岸徒步", "沙漠", "登山", "露营"].some((k) => t.includes(k))),
+  },
+  {
+    key: "couple",
+    label: "蜜月旅行",
+    icon: Heart,
+    color: "#ff6681",
+    matcher: (r) => r.tags.some((t) => ["浪漫", "蜜月", "二人世界", "海滩度假"].some((k) => t.includes(k))),
   },
 ];
 
@@ -136,12 +143,14 @@ function fmtLikes(n: number) {
 /* ─── Component ─── */
 
 function ExplorePage() {
-  const { dest } = Route.useSearch();
+  const { dest, cat: initialCat } = Route.useSearch();
   const nav = useNavigate();
   const actions = useTripActions();
   const { data: routes = [], isLoading } = useExploreRoutes(dest);
 
-  const [cat, setCat] = useState<CategoryKey>("hot");
+  const [cat, setCat] = useState<CategoryKey>(
+    (initialCat && categories.some((c) => c.key === initialCat) ? initialCat : "hot") as CategoryKey,
+  );
   const [city, setCity] = useState<(typeof cityOptions)[number]>("全部城市");
   const [days, setDays] = useState<(typeof dayOptions)[number]>("天数");
   const [mode, setMode] = useState<(typeof modeOptions)[number]>("出行方式");
@@ -167,7 +176,9 @@ function ExplorePage() {
     return list;
   }, [cat, city, days, mode, routes, sort]);
 
-  const heroImg = heroImages[dest] ?? routes[0]?.cover ?? heroImages["日本"];
+  const heroImg = dest
+    ? (heroImages[dest] ?? routes[0]?.cover ?? heroImages["日本"])
+    : (routes[0]?.cover ?? unsplash("photo-1488646953014-85cb44e25828", 800));
 
   const openRoute = async (route: ExploreRoute) => {
     setAddingId(route.id);
@@ -260,7 +271,7 @@ function ExplorePage() {
           {/* Title area */}
           <div className="mt-auto pb-5">
             <h1 className="flex items-center gap-1.5 text-[20px] font-extrabold leading-tight">
-              {dest} · 热门路线
+              {dest ? `${dest} · 热门路线` : (categories.find((c) => c.key === cat)?.label ?? "热门路线")}
               <Flame className="h-4 w-4 text-[#ff7a45]" fill="#ff7a45" />
             </h1>
             <p className="mt-1 text-[11px] text-white/85">

@@ -145,9 +145,8 @@ export function useTravelInfo(tripId: string, dayId: string) {
 
 export function useExploreRoutes(dest: string) {
   return useQuery({
-    queryKey: keys.explore(dest),
-    queryFn: () => api<ExploreRoute[]>(`/api/explore?dest=${encodeURIComponent(dest)}`),
-    enabled: Boolean(dest),
+    queryKey: keys.explore(dest || "__all__"),
+    queryFn: () => api<ExploreRoute[]>(`/api/explore${dest ? `?dest=${encodeURIComponent(dest)}` : ""}`),
     staleTime: 60_000,
   });
 }
