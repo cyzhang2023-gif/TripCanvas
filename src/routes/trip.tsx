@@ -472,8 +472,29 @@ function TripMetaBar({ trip }: { trip: TripType }) {
 }
 
 /* ─── Full-screen bottom-sheet detail modal ─── */
+/** Generate multiple image URLs for a spot (hero + gallery) */
+function spotGalleryUrls(spot: Spot): string[] {
+  const hero = spotImageUrl(spot);
+  const extras: string[] = [];
+  // Generate varied gallery images using different search terms
+  const terms = [
+    spot.title,
+    spot.desc ? `${spot.title} ${spot.desc.slice(0, 10)}` : null,
+    spot.category ? `${spot.title} ${spot.category}` : null,
+    spot.address ? `${spot.title} interior` : null,
+    spot.tags?.[0] ? `${spot.title} ${spot.tags[0]}` : null,
+    spot.tags?.[1] ? `${spot.title} ${spot.tags[1]}` : null,
+  ].filter(Boolean) as string[];
+  // Use spot-image endpoint with different queries for variety
+  for (let i = 1; i < Math.min(terms.length, 8); i++) {
+    const url = `/api/spot-image?q=${encodeURIComponent(terms[i])}&idx=${i}`;
+    extras.push(url);
+  }
+  return [hero, ...extras];
+}
+
 function SpotModal({ spot, onClose }: { spot: Spot; onClose: () => void }) {
-  const imgUrl = spotImageUrl(spot);
+  const gallery = useMemo(() => spotGalleryUrls(spot), [spot]);
   const [entered, setEntered] = useState(false);
   const [closing, setClosing] = useState(false);
 
@@ -486,96 +507,112 @@ function SpotModal({ spot, onClose }: { spot: Spot; onClose: () => void }) {
     setTimeout(onClose, 320);
   };
 
+  const config = categoryConfig[spot.category ?? "景点"] ?? categoryConfig["景点"];
+  const CatIcon = config.icon;
+  const durationText = spot.durationMin
+    ? spot.durationMin >= 60
+      ? `${Math.floor(spot.durationMin / 60)}小时${spot.durationMin % 60 ? `${spot.durationMin % 60}分钟` : ""}`
+      : `${spot.durationMin}分钟`
+    : null;
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center"
       style={{
-        background: entered && !closing ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0)",
+        background: entered && !closing ? "rgba(0,0,0,0.6)" : "rgba(0,0,0,0)",
         transition: "background 350ms cubic-bezier(.4,0,.2,1)",
       }}
       onClick={handleClose}
     >
       <div
-        className="relative w-full max-w-md overflow-hidden rounded-t-3xl bg-white shadow-2xl"
+        className="relative w-full max-w-md overflow-hidden rounded-t-[28px] shadow-2xl"
         onClick={(e) => e.stopPropagation()}
         style={{
-          maxHeight: "92vh",
+          maxHeight: "88vh",
+          background: "linear-gradient(180deg, #1a1a2e 0%, #16213e 100%)",
           transform: entered && !closing ? "translateY(0)" : "translateY(100%)",
           opacity: entered && !closing ? 1 : 0,
-          transition: "transform 380ms cubic-bezier(.32,.72,0,1), opacity 280ms ease",
+          transition: "transform 400ms cubic-bezier(.32,.72,0,1), opacity 300ms ease",
         }}
       >
-        {/* Pull handle */}
-        <div className="flex justify-center py-2.5">
-          <div className="h-1 w-10 rounded-full bg-gray-300" />
-        </div>
-
-        {/* Hero image — large, 50vw tall */}
-        <div className="relative mx-4 overflow-hidden rounded-2xl" style={{ height: "42vh" }}>
+        {/* Hero image area */}
+        <div className="relative w-full" style={{ height: "38vh" }}>
           <img
-            src={imgUrl}
+            src={gallery[0]}
             alt={spot.title}
             className="h-full w-full object-cover"
             loading="eager"
-            style={{ imageRendering: "auto" }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          {/* Gradient overlay — stronger at bottom for text readability */}
+          <div className="absolute inset-0" style={{
+            background: "linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.15) 40%, rgba(26,26,46,0.85) 85%, rgba(26,26,46,1) 100%)",
+          }} />
 
-          {/* Close button floating on image */}
+          {/* Close button */}
           <button
             onClick={handleClose}
-            className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-md"
-            style={{ transition: "background 200ms" }}
+            className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm active:bg-black/50"
           >
-            <X className="h-4.5 w-4.5" />
+            <X className="h-4 w-4" />
           </button>
 
-          {/* Badges on image bottom */}
-          <div className="absolute bottom-3 left-4 flex items-center gap-2">
+          {/* Badges floating on image — bottom left */}
+          <div className="absolute bottom-14 left-5 flex flex-wrap items-center gap-2">
             {spot.category && (
-              <span className="rounded-full bg-white/25 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-md">
-                {spot.category}
+              <span className="flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-sm">
+                <CatIcon className="h-3 w-3" /> {spot.category}
               </span>
             )}
             {spot.rating && (
-              <span className="flex items-center gap-0.5 text-[12px] font-bold text-amber-300 drop-shadow-md">
+              <span className="flex items-center gap-1 text-[13px] font-bold text-amber-300 drop-shadow-lg">
                 <Star className="h-3.5 w-3.5 fill-amber-300" /> {spot.rating}
               </span>
             )}
             {spot.price && (
-              <span className="text-[12px] font-medium text-white/90 drop-shadow-md">{spot.price}</span>
+              <span className="text-[12px] font-semibold text-white/90 drop-shadow-lg">{spot.price}</span>
             )}
           </div>
         </div>
 
-        {/* Content below image — scrollable */}
-        <div className="overflow-y-auto px-5 pb-8 pt-4" style={{ maxHeight: "calc(92vh - 42vh - 44px)" }}>
-          {/* Title */}
-          <h3 className="text-[20px] font-extrabold leading-tight text-gray-900">
+        {/* Content — on dark background, scrollable */}
+        <div
+          className="overflow-y-auto px-5 pb-6"
+          style={{ maxHeight: "calc(88vh - 38vh)" }}
+        >
+          {/* Title & desc */}
+          <h3 className="text-[22px] font-extrabold leading-tight text-white">
             {spot.title}
           </h3>
           {spot.desc && (
-            <p className="mt-1 text-[13px] leading-relaxed text-gray-500">{spot.desc}</p>
+            <p className="mt-1.5 text-[13px] leading-relaxed text-white/60">{spot.desc}</p>
           )}
 
-          {/* Intro */}
+          {/* Intro paragraph */}
           {spot.intro && (
-            <p className="mt-3 rounded-xl bg-gray-50 px-3.5 py-3 text-[13px] leading-6 text-gray-700">
+            <p className="mt-3 text-[13px] leading-6 text-white/75">
               {spot.intro}
             </p>
           )}
 
-          {/* Address & Duration */}
-          {(spot.address || spot.durationMin) && (
-            <div className="mt-3.5 flex flex-wrap items-center gap-4 text-[12px] text-gray-500">
+          {/* Info pills row */}
+          {(spot.address || durationText) && (
+            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-[11px] text-white/50">
               {spot.address && (
-                <span className="flex items-center gap-1.5">
-                  <MapPin className="h-3.5 w-3.5 shrink-0 text-gray-400" /> {spot.address}
+                <span className="flex items-start gap-1.5">
+                  <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-white/40" />
+                  <span className="leading-tight">{spot.address}</span>
                 </span>
               )}
-              {spot.durationMin && (
+              {spot.time && (
                 <span className="flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5 shrink-0 text-gray-400" /> {spot.durationMin >= 60 ? `${Math.floor(spot.durationMin / 60)}h${spot.durationMin % 60 ? `${spot.durationMin % 60}min` : ""}` : `${spot.durationMin}min`}
+                  <Clock className="h-3 w-3 shrink-0 text-white/40" />
+                  营业中 · {spot.time}
+                </span>
+              )}
+              {durationText && (
+                <span className="flex items-center gap-1.5">
+                  <Navigation className="h-3 w-3 shrink-0 text-white/40" />
+                  步行{durationText}
                 </span>
               )}
             </div>
@@ -587,7 +624,7 @@ function SpotModal({ spot, onClose }: { spot: Spot; onClose: () => void }) {
               {spot.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="rounded-full bg-gray-100 px-3 py-1 text-[11px] font-medium text-gray-600"
+                  className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[11px] font-medium text-white/70"
                 >
                   {tag}
                 </span>
@@ -595,15 +632,45 @@ function SpotModal({ spot, onClose }: { spot: Spot; onClose: () => void }) {
             </div>
           )}
 
-          {/* Navigation button */}
-          <a
-            href={amapNavUrl(spot)}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3.5 text-[14px] font-bold text-white shadow-lg transition active:scale-[0.98]"
-          >
-            <Navigation className="h-4 w-4" /> 在高德地图中导航
-          </a>
+          {/* Photo gallery — horizontal scroll */}
+          {gallery.length > 1 && (
+            <div className="no-scrollbar -mx-5 mt-4 flex gap-2 overflow-x-auto px-5">
+              {gallery.slice(1).map((url, i) => (
+                <img
+                  key={i}
+                  src={url}
+                  alt={`${spot.title} ${i + 2}`}
+                  className="h-[72px] w-[72px] shrink-0 rounded-xl object-cover"
+                  loading="lazy"
+                  style={{ background: "rgba(255,255,255,0.06)" }}
+                />
+              ))}
+              {gallery.length > 5 && (
+                <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-xl bg-white/8 text-[14px] font-bold text-white/60">
+                  +{gallery.length - 5}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Action buttons — nav + bookmark */}
+          <div className="mt-5 flex items-stretch gap-3">
+            <a
+              href={amapNavUrl(spot)}
+              target="_blank"
+              rel="noreferrer"
+              className="flex flex-1 items-center justify-center gap-2 rounded-2xl py-3.5 text-[14px] font-bold text-white shadow-lg transition active:scale-[0.98]"
+              style={{ background: "linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%)" }}
+            >
+              <Navigation className="h-4 w-4" /> 在高德地图中导航
+            </a>
+            <button
+              className="flex w-16 flex-col items-center justify-center gap-0.5 rounded-2xl bg-white/8 text-white/70 active:bg-white/12"
+            >
+              <Heart className="h-4 w-4" />
+              <span className="text-[10px]">收藏</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
