@@ -526,7 +526,7 @@ function QuizPage() {
         />
       )}
 
-      <BottomNav variant="china" />
+      <BottomNav />
     </div>
   );
 }

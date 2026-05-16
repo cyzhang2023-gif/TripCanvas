@@ -21,6 +21,12 @@ import cappadociaImg from "@/assets/cappadocia.jpg";
 import auroraImg from "@/assets/aurora.jpg";
 import lijiangImg from "@/assets/lijiang.jpg";
 import swissImg from "@/assets/swiss-train.jpg";
+import destFranceImg from "@/assets/dest-france.jpg";
+import destJapanImg from "@/assets/dest-japan.jpg";
+import grandCanyonImg from "@/assets/grand-canyon.jpg";
+import machuPicchuImg from "@/assets/machu-picchu.jpg";
+import safariImg from "@/assets/safari.jpg";
+import sydneyImg from "@/assets/sydney.jpg";
 import aiBot from "@/assets/ai-bot.png";
 import avatarUser from "@/assets/avatar-user.png";
 
@@ -43,9 +49,9 @@ const tools = [
 ];
 
 const seasonal = [
-  { img: tokyoImg, tag: "赏花季", tagColor: "var(--tag-pink)", title: "日本·东京", sub: "樱花季限定体验", meta: "4天3晚 | 机票+酒店" },
-  { img: maldivesImg, tag: "海岛推荐", tagColor: "var(--tag-cyan)", title: "马尔代夫", sub: "住进玻璃海的梦", meta: "5天4晚 | 蜜月优选" },
-  { img: chiangmaiImg, tag: "文化探索", tagColor: "var(--tag-amber)", title: "泰国·清迈", sub: "古城慢生活", meta: "6天5晚 | 深度游" },
+  { img: tokyoImg, tag: "赏花季", tagColor: "var(--tag-pink)", title: "日本·东京", sub: "樱花季限定体验", meta: "4天3晚 | 机票+酒店", dest: "日本" },
+  { img: maldivesImg, tag: "海岛推荐", tagColor: "var(--tag-cyan)", title: "马尔代夫", sub: "住进玻璃海的梦", meta: "5天4晚 | 蜜月优选", dest: "马尔代夫" },
+  { img: chiangmaiImg, tag: "文化探索", tagColor: "var(--tag-amber)", title: "泰国·清迈", sub: "古城慢生活", meta: "6天5晚 | 深度游", dest: "泰国" },
 ];
 
 const categories = [
@@ -65,20 +71,20 @@ const calendar = [
 ];
 
 const staticCommunity = [
-  { img: amalfiImg, title: "意大利阿马尔菲海岸", author: "旅行家小七", likes: "1.2万", video: true },
-  { img: cappadociaImg, title: "土耳其热气球全攻略", author: "摄影师阿May", likes: "9862" },
-  { img: auroraImg, title: "冰岛极光追逐指南", author: "背包客小鱼", likes: "7521" },
-  { img: lijiangImg, title: "丽江古城慢生活", author: "阿杰的旅行日记", likes: "6430" },
-  { img: swissImg, title: "瑞士冬季列车体验", author: "旅行摄影师KK", likes: "5821" },
+  { img: amalfiImg, title: "意大利阿马尔菲海岸", author: "旅行家小七", likes: "1.2万", video: true, dest: "意大利" },
+  { img: cappadociaImg, title: "土耳其热气球全攻略", author: "摄影师阿May", likes: "9862", dest: "土耳其" },
+  { img: auroraImg, title: "冰岛极光追逐指南", author: "背包客小鱼", likes: "7521", dest: "冰岛" },
+  { img: lijiangImg, title: "丽江古城慢生活", author: "阿杰的旅行日记", likes: "6430", dest: "中国" },
+  { img: swissImg, title: "瑞士冬季列车体验", author: "旅行摄影师KK", likes: "5821", dest: "瑞士" },
 ];
 
 const inspoMap = [
-  { name: "欧洲", sub: "浪漫小镇", img: amalfiImg, top: "10%", left: "55%" },
-  { name: "亚洲", sub: "文化之旅", img: lijiangImg, top: "20%", left: "80%" },
-  { name: "北美洲", sub: "自然奇观", img: auroraImg, top: "28%", left: "12%" },
-  { name: "南美洲", sub: "热情探险", img: chiangmaiImg, top: "62%", left: "20%" },
-  { name: "非洲", sub: "野生动物", img: surfImg, top: "54%", left: "52%" },
-  { name: "大洋洲", sub: "海岛度假", img: maldivesImg, top: "74%", left: "82%" },
+  { name: "欧洲", sub: "浪漫小镇", img: destFranceImg, top: "10%", left: "55%" },
+  { name: "亚洲", sub: "文化之旅", img: destJapanImg, top: "20%", left: "80%" },
+  { name: "北美洲", sub: "自然奇观", img: grandCanyonImg, top: "28%", left: "12%" },
+  { name: "南美洲", sub: "热情探险", img: machuPicchuImg, top: "62%", left: "20%" },
+  { name: "非洲", sub: "野生动物", img: safariImg, top: "54%", left: "52%" },
+  { name: "大洋洲", sub: "海岛度假", img: sydneyImg, top: "74%", left: "82%" },
 ];
 
 const heroTags = ["日本赏樱", "冰岛极光", "东南亚海岛", "欧洲小镇", "亲子游"];
@@ -273,7 +279,7 @@ function Index() {
                   tagColor: ["var(--tag-pink)","var(--tag-cyan)","var(--tag-amber)"][i%3],
                   title: `${r.country}·${r.city}`, sub: r.route_title,
                   meta: `${r.days_count}天${Math.max(r.days_count-1,0)}晚`, dest: r.destination||r.country }))
-              : seasonal.map(s => ({ ...s, dest: "" }))
+              : seasonal.map(s => ({ ...s }))
             ).map(s => (
               <Link key={s.title} to="/explore" search={{ dest: (s as any).dest || "" }}
                 className="relative shrink-0 w-[88px] aspect-[3/4] rounded-xl overflow-hidden block">
@@ -376,7 +382,7 @@ function Index() {
                   author: ["旅行家小七","摄影师阿May","背包客小鱼","阿杰旅行日记","摄影师KK"][i%5],
                   likes: String(Math.floor(1200 + (r.id * 137 + i * 431) % 4800)),
                   video: i === 0, dest: r.destination }))
-              : staticCommunity.map(c => ({ ...c, dest: "" }))
+              : staticCommunity.map(c => ({ ...c }))
             ).map(p => (
               <Link key={p.title} to="/explore" search={{ dest: (p as any).dest || "" }} className="shrink-0 w-[108px] block">
                 <div className="relative aspect-square rounded-xl overflow-hidden">

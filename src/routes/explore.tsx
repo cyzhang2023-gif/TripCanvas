@@ -404,7 +404,7 @@ function ExplorePage() {
           {toast}
         </div>
       )}
-      <BottomNav variant="china" />
+      <BottomNav />
     </main>
   );
 }
