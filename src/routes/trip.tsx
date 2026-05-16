@@ -200,7 +200,7 @@ function Trip() {
         <Link to="/my-trips" className="pressable absolute left-5 flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm">
           <ChevronLeft className="h-5 w-5" />
         </Link>
-        <h1 className="max-w-48 truncate text-base font-semibold">{trip.name}</h1>
+        <h1 className="mx-14 truncate text-center text-[15px] font-bold">{trip.name}</h1>
         <div className="absolute right-5 flex items-center gap-2.5">
           <button onClick={() => void actions.toggleFavorite(trip.id)} aria-label="收藏" className="pressable flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-sm">
             <Heart className={`h-5 w-5 ${trip.favorite ? "fill-rose-500 text-rose-500" : "text-muted-foreground"}`} />
@@ -219,28 +219,22 @@ function Trip() {
         <TripMetaBar trip={trip} />
       )}
 
-      {/* Sticky map — 40% viewport */}
-      <div className="sticky top-0 z-10 px-3 pb-1.5" style={{ background: "var(--gradient-soft)" }}>
-        {/* Map section title */}
-        <div className="flex items-center justify-between pb-1.5">
-          <h2 className="text-[13px] font-bold text-slate-800">
-            ✦ {(activeDay !== null && trip.days[activeDay]?.route) || "推荐路线"}
-          </h2>
-          <button className="flex items-center gap-0.5 rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-medium text-slate-600 shadow-sm backdrop-blur-sm">
-            🗺 地图图例
-          </button>
+      {/* Sticky map + controls */}
+      <div className="sticky top-0 z-10" style={{ background: "var(--background)" }}>
+        {/* Map */}
+        <div className="px-3">
+          <TripMapView
+            ref={mapHandleRef}
+            tripId={trip.id}
+            days={trip.days}
+            height="h-[36vh]"
+            className="shadow-[var(--shadow-card)]"
+            onSpotClick={handleMapSpotClick}
+          />
         </div>
-        <TripMapView
-          ref={mapHandleRef}
-          tripId={trip.id}
-          days={trip.days}
-          height="h-[42vh]"
-          className="shadow-[var(--shadow-card)]"
-          onSpotClick={handleMapSpotClick}
-        />
 
-        {/* Day chips */}
-        <div className="mt-1.5 flex items-center gap-1.5 overflow-x-auto pb-0.5">
+        {/* Day chips — single scrollable row */}
+        <div className="no-scrollbar mt-1.5 flex items-center gap-1.5 overflow-x-auto px-3 pb-1">
           <button
             onClick={() => {
               setActiveDay(null);
@@ -248,17 +242,17 @@ function Trip() {
               mapHandleRef.current?.focusDay(null);
               mapHandleRef.current?.highlightSpot(null);
             }}
-            className={`pressable shrink-0 rounded-full px-3 py-1 text-[11px] font-medium ${
+            className={`pressable shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold whitespace-nowrap ${
               activeDay === null
                 ? "bg-primary text-primary-foreground shadow-md"
                 : "bg-card text-muted-foreground shadow-sm"
             }`}
           >
-            全部
+            全部 ({trip.days.reduce((n, d) => n + d.spots.length, 0)})
           </button>
           <button
             onClick={() => setShowBudget(true)}
-            className="pressable flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-[11px] font-medium text-amber-700 shadow-sm"
+            className="pressable flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-[11px] font-semibold text-amber-700 shadow-sm whitespace-nowrap"
           >
             <Wallet className="h-3 w-3" />
             预算
@@ -267,35 +261,40 @@ function Trip() {
             <button
               key={day.id}
               onClick={() => handleDayClick(idx)}
-              className={`pressable shrink-0 rounded-full px-3 py-1 text-[11px] font-medium ${
+              className={`pressable shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold whitespace-nowrap max-w-[160px] truncate ${
                 activeDay === idx ? "text-white shadow-md" : "bg-card text-muted-foreground shadow-sm"
               }`}
               style={activeDay === idx ? { background: DAY_COLORS[idx % DAY_COLORS.length] } : undefined}
             >
               <span
-                className="mr-1 inline-block h-1.5 w-1.5 rounded-full"
+                className="mr-1 inline-block h-1.5 w-1.5 rounded-full align-middle"
                 style={{ background: DAY_COLORS[idx % DAY_COLORS.length] }}
               />
-              {day.label}
+              {day.label}{day.route ? `: ${day.route}` : ""}
             </button>
           ))}
         </div>
 
-        {/* Category filter tabs */}
+        {/* Category summary pills */}
         <CategoryFilterTabs days={trip.days} />
 
-        {/* Spot info from map click */}
+        {/* Spot info popup from map click */}
         {selectedSpot && (
-          <SpotDetailPopup
-            spot={selectedSpot.spot}
-            dayColor={DAY_COLORS[selectedSpot.dayIndex % DAY_COLORS.length]}
-            onClose={() => {
-              setSelectedSpot(null);
-              mapHandleRef.current?.highlightSpot(null);
-            }}
-            onDetail={() => setDetailSpot(selectedSpot.spot)}
-          />
+          <div className="px-3 pb-1">
+            <SpotDetailPopup
+              spot={selectedSpot.spot}
+              dayColor={DAY_COLORS[selectedSpot.dayIndex % DAY_COLORS.length]}
+              onClose={() => {
+                setSelectedSpot(null);
+                mapHandleRef.current?.highlightSpot(null);
+              }}
+              onDetail={() => setDetailSpot(selectedSpot.spot)}
+            />
+          </div>
         )}
+
+        {/* Bottom shadow fade */}
+        <div className="h-1 bg-gradient-to-b from-[var(--background)] to-transparent" />
       </div>
 
       {/* Day sections */}
@@ -326,7 +325,7 @@ function Trip() {
   );
 }
 
-/* ─── Category filter tabs ─── */
+/* ─── Category summary pills ─── */
 function CategoryFilterTabs({ days }: { days: Day[] }) {
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -339,26 +338,25 @@ function CategoryFilterTabs({ days }: { days: Day[] }) {
     return counts;
   }, [days]);
 
-  const categories = ["美食", "购物", "景点", "住宿", "休闲"];
+  const cats = ["景点", "美食", "住宿", "购物", "休闲"];
+  const hasCats = cats.some((c) => (categoryCounts[c] ?? 0) > 0);
+  if (!hasCats) return null;
 
   return (
-    <div className="mt-1 flex items-center gap-1.5 overflow-x-auto pb-0.5">
-      {categories.map((cat) => {
+    <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto px-3 pb-1.5">
+      {cats.map((cat) => {
         const count = categoryCounts[cat] ?? 0;
         if (count === 0) return null;
-        const cfg = categoryConfig[cat];
+        const cfg = categoryConfig[cat] ?? categoryConfig["景点"];
         return (
           <span
             key={cat}
-            className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-medium ${cfg.bg} ${cfg.color}`}
+            className={`shrink-0 rounded-full px-2.5 py-[3px] text-[10px] font-bold whitespace-nowrap ${cfg.bg} ${cfg.color}`}
           >
             {cat} {count}
           </span>
         );
       })}
-      <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-medium text-slate-600">
-        筛选
-      </span>
     </div>
   );
 }
@@ -371,14 +369,14 @@ const paceLabel: Record<string, string> = { relaxed: "慢节奏", normal: "适�
 function TripMetaBar({ trip }: { trip: TripType }) {
   const tripCover = trip.coverUrl || coverUrl(trip.cover);
   return (
-    <div className="mx-3 mb-1.5 overflow-hidden rounded-xl bg-white/80 px-3.5 py-2.5 shadow-sm backdrop-blur-sm">
+    <div className="mx-3 mb-2 overflow-hidden rounded-2xl bg-white px-3.5 py-3 shadow-sm">
       <div className="flex gap-3">
         {/* Left: text info */}
         <div className="min-w-0 flex-1">
           {trip.summary && (
-            <p className="text-[11px] leading-4 text-slate-600">{trip.summary}</p>
+            <p className="line-clamp-3 text-[12px] leading-[18px] text-slate-600">{trip.summary}</p>
           )}
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
             {trip.destination && (
               <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700">
                 <MapPin className="mr-0.5 inline h-2.5 w-2.5" />{trip.city || trip.destination}
@@ -406,9 +404,9 @@ function TripMetaBar({ trip }: { trip: TripType }) {
             )}
           </div>
           {trip.tags && trip.tags.length > 0 && (
-            <div className="mt-1.5 flex flex-wrap gap-1">
+            <div className="mt-2 flex flex-wrap gap-1.5">
               {trip.tags.slice(0, 5).map((tag) => (
-                <span key={tag} className="text-[9px] font-bold text-[#4f57a6]">#{tag}</span>
+                <span key={tag} className="text-[9px] font-bold text-primary/70">#{tag}</span>
               ))}
             </div>
           )}
@@ -419,7 +417,7 @@ function TripMetaBar({ trip }: { trip: TripType }) {
             <img
               src={tripCover}
               alt="封面"
-              className="h-[80px] w-[80px] rounded-xl object-cover shadow-sm"
+              className="h-[88px] w-[88px] rounded-2xl object-cover shadow-md"
             />
             <span className="text-[9px] font-medium text-primary">查看攻略 →</span>
           </div>
@@ -923,19 +921,29 @@ function DaySection({
   return (
     <div className={`transition-opacity duration-200 ${isActive ? "opacity-100" : "opacity-40"}`}>
       {/* Day header */}
-      <div className="pb-2 pt-1">
-        <div className="flex items-start justify-between">
-          <div className="min-w-0 flex-1">
-            <h3 className="flex items-center gap-1.5 text-[13px] font-bold text-slate-800">
-              <span style={{ color: dayColor }}>♥</span> {day.label} {day.route && <span className="font-normal text-muted-foreground">· {day.route}</span>}
-            </h3>
-            {day.route && (
-              <p className="mt-0.5 text-[11px] text-muted-foreground">{day.route}</p>
+      <div className="rounded-xl bg-white px-3 py-2.5 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[12px] font-black text-white" style={{ background: dayColor }}>
+              {dayIndex + 1}
+            </span>
+            <div className="min-w-0 flex-1">
+              <h3 className="truncate text-[13px] font-bold text-slate-800">{day.label}</h3>
+              {day.route && (
+                <p className="truncate text-[10px] text-muted-foreground">{day.route}</p>
+              )}
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="flex items-center gap-0.5 rounded-full bg-slate-50 px-2 py-0.5 text-[10px] text-muted-foreground">
+              <Clock className="h-2.5 w-2.5" /> {totalHours}h
+            </span>
+            {budget.total > 0 && (
+              <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+                {formatCurrency(budget.total)}
+              </span>
             )}
           </div>
-          <span className="shrink-0 flex items-center gap-0.5 text-[10px] text-muted-foreground">
-            <Clock className="h-3 w-3" /> 约 {totalHours} 小时
-          </span>
         </div>
       </div>
 
