@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   CalendarDays,
   Check,
+  ChevronDown,
   ChevronLeft,
   Clock,
   Heart,
@@ -24,6 +25,7 @@ import { TripMapView, amapNavUrl, type TripMapHandle } from "@/components/AMapVi
 import { BottomNav } from "@/components/BottomNav";
 import { DAY_COLORS } from "@/lib/constants";
 import {
+  coverUrl,
   useTravelInfo,
   useTripActions,
   useTripQuery,
@@ -219,6 +221,15 @@ function Trip() {
 
       {/* Sticky map — 40% viewport */}
       <div className="sticky top-0 z-10 px-3 pb-1.5" style={{ background: "var(--gradient-soft)" }}>
+        {/* Map section title */}
+        <div className="flex items-center justify-between pb-1.5">
+          <h2 className="text-[13px] font-bold text-slate-800">
+            ✦ {(activeDay !== null && trip.days[activeDay]?.route) || "推荐路线"}
+          </h2>
+          <button className="flex items-center gap-0.5 rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-medium text-slate-600 shadow-sm backdrop-blur-sm">
+            🗺 地图图例
+          </button>
+        </div>
         <TripMapView
           ref={mapHandleRef}
           tripId={trip.id}
@@ -237,9 +248,9 @@ function Trip() {
               mapHandleRef.current?.focusDay(null);
               mapHandleRef.current?.highlightSpot(null);
             }}
-            className={`pressable shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
+            className={`pressable shrink-0 rounded-full px-3 py-1 text-[11px] font-medium ${
               activeDay === null
-                ? "bg-primary text-primary-foreground"
+                ? "bg-primary text-primary-foreground shadow-md"
                 : "bg-card text-muted-foreground shadow-sm"
             }`}
           >
@@ -247,7 +258,7 @@ function Trip() {
           </button>
           <button
             onClick={() => setShowBudget(true)}
-            className="pressable flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-medium text-amber-700 shadow-sm"
+            className="pressable flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-[11px] font-medium text-amber-700 shadow-sm"
           >
             <Wallet className="h-3 w-3" />
             预算
@@ -256,8 +267,8 @@ function Trip() {
             <button
               key={day.id}
               onClick={() => handleDayClick(idx)}
-              className={`pressable shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
-                activeDay === idx ? "text-white" : "bg-card text-muted-foreground shadow-sm"
+              className={`pressable shrink-0 rounded-full px-3 py-1 text-[11px] font-medium ${
+                activeDay === idx ? "text-white shadow-md" : "bg-card text-muted-foreground shadow-sm"
               }`}
               style={activeDay === idx ? { background: DAY_COLORS[idx % DAY_COLORS.length] } : undefined}
             >
@@ -269,6 +280,9 @@ function Trip() {
             </button>
           ))}
         </div>
+
+        {/* Category filter tabs */}
+        <CategoryFilterTabs days={trip.days} />
 
         {/* Spot info from map click */}
         {selectedSpot && (
@@ -312,51 +326,105 @@ function Trip() {
   );
 }
 
+/* ─── Category filter tabs ─── */
+function CategoryFilterTabs({ days }: { days: Day[] }) {
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const day of days) {
+      for (const spot of day.spots) {
+        const cat = spot.category ?? "景点";
+        counts[cat] = (counts[cat] ?? 0) + 1;
+      }
+    }
+    return counts;
+  }, [days]);
+
+  const categories = ["美食", "购物", "景点", "住宿", "休闲"];
+
+  return (
+    <div className="mt-1 flex items-center gap-1.5 overflow-x-auto pb-0.5">
+      {categories.map((cat) => {
+        const count = categoryCounts[cat] ?? 0;
+        if (count === 0) return null;
+        const cfg = categoryConfig[cat];
+        return (
+          <span
+            key={cat}
+            className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-medium ${cfg.bg} ${cfg.color}`}
+          >
+            {cat} {count}
+          </span>
+        );
+      })}
+      <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-medium text-slate-600">
+        筛选
+      </span>
+    </div>
+  );
+}
+
 /* ─── Trip metadata bar ─── */
 const budgetLabel: Record<string, string> = { low: "经济", medium: "舒适", high: "高品质" };
 const typeLabel: Record<string, string> = { solo: "独行", couple: "情侣", family: "家庭", friends: "朋友" };
 const paceLabel: Record<string, string> = { relaxed: "慢节奏", normal: "适中", fast: "暴走" };
 
 function TripMetaBar({ trip }: { trip: TripType }) {
+  const tripCover = trip.coverUrl || coverUrl(trip.cover);
   return (
     <div className="mx-3 mb-1.5 overflow-hidden rounded-xl bg-white/80 px-3.5 py-2.5 shadow-sm backdrop-blur-sm">
-      {trip.summary && (
-        <p className="text-[11px] leading-4 text-slate-600">{trip.summary}</p>
-      )}
-      <div className="mt-1.5 flex flex-wrap items-center gap-2">
-        {trip.destination && (
-          <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700">
-            <MapPin className="mr-0.5 inline h-2.5 w-2.5" />{trip.city || trip.destination}
-          </span>
-        )}
-        {trip.budgetLevel && (
-          <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">
-            <Wallet className="mr-0.5 inline h-2.5 w-2.5" />{budgetLabel[trip.budgetLevel] || trip.budgetLevel}
-          </span>
-        )}
-        {trip.travelType && (
-          <span className="rounded-full bg-pink-50 px-2 py-0.5 text-[10px] font-medium text-pink-700">
-            {typeLabel[trip.travelType] || trip.travelType}
-          </span>
-        )}
-        {trip.pace && (
-          <span className="rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-medium text-green-700">
-            {paceLabel[trip.pace] || trip.pace}
-          </span>
-        )}
-        {trip.mood && (
-          <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-medium text-violet-700">
-            {trip.mood}
-          </span>
+      <div className="flex gap-3">
+        {/* Left: text info */}
+        <div className="min-w-0 flex-1">
+          {trip.summary && (
+            <p className="text-[11px] leading-4 text-slate-600">{trip.summary}</p>
+          )}
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            {trip.destination && (
+              <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700">
+                <MapPin className="mr-0.5 inline h-2.5 w-2.5" />{trip.city || trip.destination}
+              </span>
+            )}
+            {trip.budgetLevel && (
+              <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+                <Wallet className="mr-0.5 inline h-2.5 w-2.5" />{budgetLabel[trip.budgetLevel] || trip.budgetLevel}
+              </span>
+            )}
+            {trip.travelType && (
+              <span className="rounded-full bg-pink-50 px-2 py-0.5 text-[10px] font-medium text-pink-700">
+                {typeLabel[trip.travelType] || trip.travelType}
+              </span>
+            )}
+            {trip.pace && (
+              <span className="rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-medium text-green-700">
+                {paceLabel[trip.pace] || trip.pace}
+              </span>
+            )}
+            {trip.mood && (
+              <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-medium text-violet-700">
+                {trip.mood}
+              </span>
+            )}
+          </div>
+          {trip.tags && trip.tags.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {trip.tags.slice(0, 5).map((tag) => (
+                <span key={tag} className="text-[9px] font-bold text-[#4f57a6]">#{tag}</span>
+              ))}
+            </div>
+          )}
+        </div>
+        {/* Right: cover thumbnail */}
+        {tripCover && (
+          <div className="flex shrink-0 flex-col items-center gap-1">
+            <img
+              src={tripCover}
+              alt="封面"
+              className="h-[80px] w-[80px] rounded-xl object-cover shadow-sm"
+            />
+            <span className="text-[9px] font-medium text-primary">查看攻略 →</span>
+          </div>
         )}
       </div>
-      {trip.tags && trip.tags.length > 0 && (
-        <div className="mt-1.5 flex flex-wrap gap-1">
-          {trip.tags.slice(0, 5).map((tag) => (
-            <span key={tag} className="text-[9px] font-bold text-[#4f57a6]">#{tag}</span>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -807,51 +875,47 @@ function DaySection({
   const dayColor = DAY_COLORS[dayIndex % DAY_COLORS.length];
   const { data: travelData } = useTravelInfo(tripId, day.id);
   const budget = dayBudget(day.spots);
+  const [expanded, setExpanded] = useState(false);
+
+  // Calculate total hours for the day
+  const totalHours = useMemo(() => {
+    let mins = 0;
+    for (const spot of day.spots) {
+      mins += spot.durationMin ?? 60;
+    }
+    return (mins / 60).toFixed(1);
+  }, [day.spots]);
+
+  const visibleSpots = expanded || editing ? day.spots : day.spots.slice(0, 3);
+  const hasMore = day.spots.length > 3 && !editing;
 
   return (
     <div className={`transition-opacity duration-200 ${isActive ? "opacity-100" : "opacity-40"}`}>
-      <div className="flex items-center gap-2 pb-1.5">
-        <span className="rounded-md px-2 py-0.5 text-[11px] font-bold text-white" style={{ background: dayColor }}>
-          {day.label}
-        </span>
-        <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">{day.route}</span>
-        {budget.total > 0 && (
-          <span className="shrink-0 text-[10px] font-medium text-muted-foreground">
-            {formatCurrency(budget.total)}
+      {/* Day header */}
+      <div className="pb-2 pt-1">
+        <div className="flex items-start justify-between">
+          <div className="min-w-0 flex-1">
+            <h3 className="flex items-center gap-1.5 text-[13px] font-bold text-slate-800">
+              <span style={{ color: dayColor }}>♥</span> {day.label} {day.route && <span className="font-normal text-muted-foreground">· {day.route}</span>}
+            </h3>
+            {day.route && (
+              <p className="mt-0.5 text-[11px] text-muted-foreground">{day.route}</p>
+            )}
+          </div>
+          <span className="shrink-0 flex items-center gap-0.5 text-[10px] text-muted-foreground">
+            <Clock className="h-3 w-3" /> 约 {totalHours} 小时
           </span>
-        )}
+        </div>
       </div>
 
-      <div className="relative space-y-1.5 pl-3">
+      {/* Timeline with solid blue line */}
+      <div className="relative space-y-0 pl-4">
         <div
-          className="absolute bottom-2 left-[6px] top-2 w-px"
-          style={{ background: `linear-gradient(to bottom, ${dayColor}50, ${dayColor}15, transparent)` }}
+          className="absolute bottom-2 left-[7px] top-2 w-[2px] rounded-full"
+          style={{ background: dayColor }}
         />
-        {day.spots.map((spot, sIdx) => (
+        {visibleSpots.map((spot, sIdx) => (
           <div key={spot.id}>
-            {sIdx > 0 && (() => {
-              const prev = day.spots[sIdx - 1];
-              const travelKey = `${prev.id}→${spot.id}`;
-              const info: TravelInfo | undefined = travelData?.[travelKey];
-              const fallbackMins = travelMinutesFallback(prev, spot);
-
-              if (info) {
-                return (
-                  <div className="flex items-center gap-1 py-0.5 pl-1">
-                    <Clock className="h-2.5 w-2.5 text-muted-foreground/50" />
-                    <span className="text-[9px] text-muted-foreground/60">
-                      {modeLabel[info.mode]} {formatDuration(info.duration)} · {formatDistance(info.distance)}
-                    </span>
-                  </div>
-                );
-              }
-              return fallbackMins ? (
-                <div className="flex items-center gap-1 py-0.5 pl-1">
-                  <Clock className="h-2.5 w-2.5 text-muted-foreground/50" />
-                  <span className="text-[9px] text-muted-foreground/60">约 {fallbackMins} 分钟</span>
-                </div>
-              ) : null;
-            })()}
             <SpotCard
               tripId={tripId}
               dayId={day.id}
@@ -863,12 +927,62 @@ function DaySection({
               onSpotClick={onSpotClick}
               onDetail={onDetail}
             />
+            {/* Travel info between spots */}
+            {sIdx < visibleSpots.length - 1 && (() => {
+              const next = visibleSpots[sIdx + 1];
+              const travelKey = `${spot.id}→${next.id}`;
+              const info: TravelInfo | undefined = travelData?.[travelKey];
+              const fallbackMins = travelMinutesFallback(spot, next);
+
+              if (info) {
+                return (
+                  <div className="flex items-center gap-1 py-1 pl-2">
+                    <Clock className="h-2.5 w-2.5 text-blue-400" />
+                    <span className="text-[10px] text-blue-500/80">
+                      {modeLabel[info.mode]} {formatDuration(info.duration)} · {formatDistance(info.distance)}
+                    </span>
+                  </div>
+                );
+              }
+              if (fallbackMins) {
+                const dist = (spot.lat != null && spot.lng != null && next.lat != null && next.lng != null)
+                  ? Math.round(Math.hypot((spot.lat - next.lat) * 111000, (spot.lng - next.lng) * 111000 * Math.cos((spot.lat * Math.PI) / 180)))
+                  : null;
+                return (
+                  <div className="flex items-center gap-1 py-1 pl-2">
+                    <Clock className="h-2.5 w-2.5 text-blue-400" />
+                    <span className="text-[10px] text-blue-500/80">
+                      步行 {fallbackMins}分钟{dist ? ` · ${formatDistance(dist)}` : ""}
+                    </span>
+                  </div>
+                );
+              }
+              return null;
+            })()}
           </div>
         ))}
         {day.spots.length === 0 && (
           <p className="py-4 text-center text-xs text-muted-foreground">这一天还没有安排</p>
         )}
       </div>
+
+      {/* Expand/collapse button */}
+      {hasMore && !expanded && (
+        <button
+          onClick={() => setExpanded(true)}
+          className="mt-2 flex w-full items-center justify-center gap-1 rounded-lg bg-slate-50 py-2 text-[11px] font-medium text-primary"
+        >
+          查看全部行程 ({day.spots.length} 个地点) <ChevronDown className="h-3 w-3" />
+        </button>
+      )}
+      {hasMore && expanded && (
+        <button
+          onClick={() => setExpanded(false)}
+          className="mt-2 flex w-full items-center justify-center gap-1 rounded-lg bg-slate-50 py-2 text-[11px] font-medium text-muted-foreground"
+        >
+          收起 <ChevronDown className="h-3 w-3 rotate-180" />
+        </button>
+      )}
 
       {editing && (
         <button
@@ -882,7 +996,7 @@ function DaySection({
   );
 }
 
-/* ─── Spot card (compact/flat) ─── */
+/* ─── Spot card (timeline style) ─── */
 function SpotCard({
   tripId,
   dayId,
@@ -905,9 +1019,7 @@ function SpotCard({
   onDetail: (spot: Spot) => void;
 }) {
   const actions = useTripActions();
-
   const config = categoryConfig[spot.category ?? "景点"] ?? categoryConfig["景点"];
-  const Icon = config.icon;
 
   if (editing) {
     return (
@@ -921,63 +1033,64 @@ function SpotCard({
     );
   }
 
+  const imgUrl = spotImageUrl(spot);
+
   return (
-    <div className="relative flex gap-2">
-      <div className="flex flex-col items-center pt-2.5">
+    <div
+      className={`relative flex items-start gap-3 py-2 cursor-pointer transition-all active:scale-[0.99] ${
+        isSelected ? "rounded-lg bg-blue-50/50" : ""
+      }`}
+      onClick={() => onSpotClick(spot, dayIndex)}
+    >
+      {/* Timeline dot */}
+      <div className="relative z-10 flex flex-col items-center">
         <span
-          className="flex h-3 w-3 rounded-full border-2 border-white"
-          style={{ background: dayColor, boxShadow: `0 0 0 1px ${dayColor}40` }}
+          className="mt-1 flex h-3.5 w-3.5 items-center justify-center rounded-full border-[2.5px] border-white"
+          style={{ background: dayColor, boxShadow: `0 0 0 1.5px ${dayColor}60` }}
         />
       </div>
 
+      {/* Content */}
       <div className="min-w-0 flex-1">
-        <div
-          className={`rounded-lg bg-card shadow-[var(--shadow-card)] active:scale-[0.99] transition-all cursor-pointer ${
-            isSelected ? "ring-2" : ""
-          }`}
-          style={isSelected ? { boxShadow: `0 0 0 2px ${dayColor}` } : undefined}
-          onClick={() => onSpotClick(spot, dayIndex)}
-        >
-          <div className="flex items-center gap-2 px-2.5 py-2">
-            <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${config.bg}`}>
-              <Icon className={`h-3 w-3 ${config.color}`} />
+        {/* Top row: time + category + rating */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-[12px] font-bold text-slate-700">{spot.time}</span>
+          {spot.category && (
+            <span className={`rounded-full px-1.5 py-px text-[9px] font-semibold ${config.bg} ${config.color}`}>
+              {spot.category}
             </span>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1">
-                <span className="text-[10px] font-medium text-muted-foreground">{spot.time}</span>
-                {spot.category && (
-                  <span className={`rounded px-1 py-px text-[9px] font-medium ${config.bg} ${config.color}`}>
-                    {spot.category}
-                  </span>
-                )}
-                {spot.rating && (
-                  <span className="flex items-center gap-0.5 text-[9px] text-amber-500">
-                    <Star className="h-2 w-2 fill-amber-400" /> {spot.rating}
-                  </span>
-                )}
-              </div>
-              <p className="truncate text-xs font-semibold leading-tight">{spot.title}</p>
-            </div>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDetail(spot);
-              }}
-              className="flex h-6 shrink-0 items-center gap-0.5 rounded-full bg-muted px-2 text-[10px] font-medium text-muted-foreground"
-            >
-              <Info className="h-3 w-3" /> 详情
-            </button>
-            <a
-              href={amapNavUrl(spot)}
-              target="_blank"
-              rel="noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10"
-            >
-              <Navigation className="h-3 w-3 text-primary" />
-            </a>
-          </div>
+          )}
+          {spot.rating && (
+            <span className="flex items-center gap-0.5 text-[10px] text-amber-600">
+              <Star className="h-2.5 w-2.5 fill-amber-400" /> {spot.rating}
+            </span>
+          )}
         </div>
+        {/* Title */}
+        <p className="mt-0.5 truncate text-[13px] font-semibold leading-tight text-slate-900">{spot.title}</p>
+        {/* Desc */}
+        {spot.desc && (
+          <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{spot.desc}</p>
+        )}
+      </div>
+
+      {/* Right side: photo + nav */}
+      <div className="flex shrink-0 flex-col items-end gap-1">
+        <img
+          src={imgUrl}
+          alt={spot.title}
+          className="h-[56px] w-[56px] rounded-lg object-cover shadow-sm"
+          loading="lazy"
+        />
+        <a
+          href={amapNavUrl(spot)}
+          target="_blank"
+          rel="noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="flex items-center gap-0.5 text-[10px] font-medium text-primary"
+        >
+          <Navigation className="h-3 w-3" /> 导航
+        </a>
       </div>
     </div>
   );
