@@ -53,29 +53,73 @@ const categoryConfig: Record<string, { icon: typeof MapPin; color: string; bg: s
 };
 
 /* ─── Budget & travel time helpers ─── */
+
+/** Detect currency symbol/unit from a price string */
+const currencyPatterns: [RegExp, string][] = [
+  [/\$|美元|USD/i, "$"],
+  [/€|欧元|EUR/i, "€"],
+  [/£|英镑|GBP/i, "£"],
+  [/日元|JPY|円/i, "¥(JPY)"],
+  [/韩元|KRW|원/i, "₩"],
+  [/泰铢|THB|฿/i, "฿"],
+  [/AED|迪拉姆/i, "AED "],
+  [/AUD|澳元|AU\$/i, "A$"],
+  [/新元|SGD|S\$/i, "S$"],
+  [/ISK|冰岛克朗/i, "ISK "],
+  [/里拉|TL|TRY/i, "₺"],
+  [/卢比|INR|Rs|尼泊尔卢比|NPR/i, "₹"],
+  [/比索|PHP|MXN/i, "MXN "],
+  [/索尔|PEN/i, "PEN "],
+  [/雷亚尔|BRL|R\$/i, "R$"],
+  [/¥|元|人民币|RMB|CNY/i, "¥"],
+];
+
+function detectCurrency(price?: string): string {
+  if (!price) return "¥";
+  for (const [re, sym] of currencyPatterns) {
+    if (re.test(price)) return sym;
+  }
+  return "¥"; // default
+}
+
 function parsePrice(price?: string): number {
   if (!price) return 0;
+  // Handle range like "200-300" — take average
+  const rangeMatch = price.match(/([\d,]+)\s*[-~]\s*([\d,]+)/);
+  if (rangeMatch) {
+    const lo = Number(rangeMatch[1].replace(/,/g, ""));
+    const hi = Number(rangeMatch[2].replace(/,/g, ""));
+    return Math.round((lo + hi) / 2);
+  }
   const match = price.match(/[\d,]+/);
   return match ? Number(match[0].replace(/,/g, "")) : 0;
 }
 
-function formatCurrency(n: number): string {
-  if (n >= 10000) return `¥${(n / 10000).toFixed(1)}万`;
-  return `¥${n.toLocaleString()}`;
+function formatCurrency(n: number, sym = "¥"): string {
+  // For JPY-style yen, strip the "(JPY)" for display
+  const display = sym.replace("(JPY)", "");
+  if (sym === "¥" && n >= 10000) return `${display}${(n / 10000).toFixed(1)}万`;
+  return `${display}${n.toLocaleString()}`;
 }
 
-function dayBudget(spots: Spot[]): { total: number; breakdown: Record<string, number> } {
+type BudgetResult = { total: number; breakdown: Record<string, number>; currency: string };
+
+function dayBudget(spots: Spot[]): BudgetResult {
   const breakdown: Record<string, number> = {};
   let total = 0;
+  // Detect dominant currency from first spot with price
+  let currency = "¥";
+  let detected = false;
   for (const s of spots) {
     const p = parsePrice(s.price);
     if (p > 0) {
+      if (!detected) { currency = detectCurrency(s.price); detected = true; }
       const cat = s.category ?? "其他";
       breakdown[cat] = (breakdown[cat] ?? 0) + p;
       total += p;
     }
   }
-  return { total, breakdown };
+  return { total, breakdown, currency };
 }
 
 /** Fallback estimate when AMap API data is unavailable */
@@ -220,7 +264,7 @@ function Trip() {
       )}
 
       {/* Sticky map + controls */}
-      <div className="sticky top-0 z-10" style={{ background: "var(--background)" }}>
+      <div className="sticky top-0 z-20" style={{ background: "var(--background)" }}>
         {/* Map */}
         <div className="px-3">
           <TripMapView
@@ -648,14 +692,18 @@ function DonutChart({ segments, size = 120 }: { segments: { color: string; value
 function BudgetPopup({ days, onClose }: { days: Day[]; onClose: () => void }) {
   const [expandedDay, setExpandedDay] = useState<number | null>(null);
 
-  const { grandTotal, perDay } = useMemo(() => {
+  const { grandTotal, perDay, tripCurrency } = useMemo(() => {
     let grandTotal = 0;
+    const currencyCount: Record<string, number> = {};
     const perDay = days.map((day) => {
       const b = dayBudget(day.spots);
       grandTotal += b.total;
+      if (b.total > 0) currencyCount[b.currency] = (currencyCount[b.currency] ?? 0) + b.total;
       return { label: day.label, ...b };
     });
-    return { grandTotal, perDay };
+    // Use the currency with the most total value
+    const tripCurrency = Object.entries(currencyCount).sort(([, a], [, b]) => b - a)[0]?.[0] ?? "¥";
+    return { grandTotal, perDay, tripCurrency };
   }, [days]);
 
   const catTotals: Record<string, number> = {};
@@ -718,7 +766,7 @@ function BudgetPopup({ days, onClose }: { days: Day[]; onClose: () => void }) {
               <div className="flex flex-col items-center">
                 <div className="rounded-xl bg-gradient-to-br from-violet-100 to-violet-200 p-2">
                   <div className="rounded-lg bg-violet-700 px-2 py-0.5 text-[10px] font-bold text-white">
-                    ¥{grandTotal > 0 ? grandTotal.toLocaleString() : "0"}
+                    {formatCurrency(grandTotal, tripCurrency)}
                   </div>
                   <div className="mt-1 grid grid-cols-3 gap-0.5">
                     {[...Array(6)].map((_, i) => (
@@ -742,7 +790,7 @@ function BudgetPopup({ days, onClose }: { days: Day[]; onClose: () => void }) {
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-[9px] text-gray-400">总预算</span>
                   <span className="text-sm font-bold text-primary">
-                    {grandTotal >= 10000 ? `¥${(grandTotal / 10000).toFixed(1)}万` : `¥${grandTotal.toLocaleString()}`}
+                    {formatCurrency(grandTotal, tripCurrency)}
                   </span>
                 </div>
               </div>
@@ -750,7 +798,7 @@ function BudgetPopup({ days, onClose }: { days: Day[]; onClose: () => void }) {
               <div className="flex-1">
                 <p className="text-[11px] text-gray-500">行程总预算</p>
                 <p className="text-[28px] font-extrabold tracking-tight text-gray-900">
-                  ¥{grandTotal.toLocaleString()}
+                  {formatCurrency(grandTotal, tripCurrency)}
                 </p>
                 <p className="mt-1 flex items-center gap-1.5 text-[11px] text-gray-400">
                   <CalendarDays className="h-3 w-3" /> {days.length} 天 · 含餐饮、门票、住宿等
@@ -784,7 +832,7 @@ function BudgetPopup({ days, onClose }: { days: Day[]; onClose: () => void }) {
                       <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-100">
                         <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: cfg.color }} />
                       </div>
-                      <p className="mt-2 text-[15px] font-bold text-gray-900">¥{val.toLocaleString()}</p>
+                      <p className="mt-2 text-[15px] font-bold text-gray-900">{formatCurrency(val, tripCurrency)}</p>
                     </div>
                   );
                 })}
@@ -804,7 +852,7 @@ function BudgetPopup({ days, onClose }: { days: Day[]; onClose: () => void }) {
                             <span className="text-[11px] text-gray-600">{cat}</span>
                             <span className="text-[10px] font-bold" style={{ color: cfg.color }}>{pct}%</span>
                           </div>
-                          <p className="text-[13px] font-bold text-gray-900">¥{val.toLocaleString()}</p>
+                          <p className="text-[13px] font-bold text-gray-900">{formatCurrency(val, tripCurrency)}</p>
                         </div>
                       </div>
                     );
@@ -839,7 +887,7 @@ function BudgetPopup({ days, onClose }: { days: Day[]; onClose: () => void }) {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-[15px] font-bold text-gray-900">
-                          {d.total > 0 ? `¥${d.total.toLocaleString()}` : "—"}
+                          {d.total > 0 ? formatCurrency(d.total, d.currency) : "—"}
                         </span>
                         <svg className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}
                           fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -857,7 +905,7 @@ function BudgetPopup({ days, onClose }: { days: Day[]; onClose: () => void }) {
                               <span className="flex items-center gap-1.5 text-[11px] text-gray-500">
                                 <span className="flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold" style={{ background: cfg.bg, color: cfg.color }}>{cfg.mark}</span> {cat}
                               </span>
-                              <span className="text-[11px] font-semibold text-gray-700">¥{val.toLocaleString()}</span>
+                              <span className="text-[11px] font-semibold text-gray-700">{formatCurrency(val, d.currency)}</span>
                             </div>
                           );
                         })}
@@ -941,15 +989,15 @@ function DaySection({
             </span>
             {budget.total > 0 && (
               <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">
-                {formatCurrency(budget.total)}
+                {formatCurrency(budget.total, budget.currency)}
               </span>
             )}
           </div>
         </div>
       </div>
 
-      {/* Timeline with solid blue line */}
-      <div className="relative space-y-0 pl-4">
+      {/* Timeline with solid line */}
+      <div className="relative z-0 space-y-0 pl-4">
         <div
           className="absolute bottom-2 left-[7px] top-2 w-[2px] rounded-full"
           style={{ background: dayColor }}
@@ -1083,7 +1131,7 @@ function SpotCard({
       onClick={() => onSpotClick(spot, dayIndex)}
     >
       {/* Timeline dot */}
-      <div className="relative z-10 flex flex-col items-center">
+      <div className="relative z-[1] flex flex-col items-center">
         <span
           className="mt-1 flex h-3.5 w-3.5 items-center justify-center rounded-full border-[2.5px] border-white"
           style={{ background: dayColor, boxShadow: `0 0 0 1.5px ${dayColor}60` }}
