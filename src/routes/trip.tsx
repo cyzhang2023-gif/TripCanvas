@@ -156,11 +156,15 @@ function isValidImageUrl(url?: string): boolean {
   return !!url && !url.includes("source.unsplash.com");
 }
 
-/** Build a server-side Wikipedia image URL for a spot (lazy loaded) */
+/** Build a server-side image URL for a spot — includes category for relevance */
 function spotImageUrl(spot: Spot): string {
   if (isValidImageUrl(spot.image)) return spot.image!;
-  // Use server endpoint that fetches real Wikipedia image for this spot
-  return `/api/spot-image?q=${encodeURIComponent(spot.title)}`;
+  // Include category so "美食" spots search for food, not scenery
+  const cat = spot.category ?? "";
+  const q = cat && ["美食", "购物", "住宿"].includes(cat)
+    ? `${spot.title} ${cat}`
+    : spot.title;
+  return `/api/spot-image?q=${encodeURIComponent(q)}`;
 }
 
 function Trip() {
@@ -472,29 +476,51 @@ function TripMetaBar({ trip }: { trip: TripType }) {
 }
 
 /* ─── Full-screen bottom-sheet detail modal ─── */
-/** Generate multiple image URLs for a spot (hero + gallery) */
-function spotGalleryUrls(spot: Spot): string[] {
-  const hero = spotImageUrl(spot);
-  const extras: string[] = [];
-  // Generate varied gallery images using different search terms
-  const terms = [
-    spot.title,
-    spot.desc ? `${spot.title} ${spot.desc.slice(0, 10)}` : null,
-    spot.category ? `${spot.title} ${spot.category}` : null,
-    spot.address ? `${spot.title} interior` : null,
-    spot.tags?.[0] ? `${spot.title} ${spot.tags[0]}` : null,
-    spot.tags?.[1] ? `${spot.title} ${spot.tags[1]}` : null,
-  ].filter(Boolean) as string[];
-  // Use spot-image endpoint with different queries for variety
-  for (let i = 1; i < Math.min(terms.length, 8); i++) {
-    const url = `/api/spot-image?q=${encodeURIComponent(terms[i])}&idx=${i}`;
-    extras.push(url);
+/** Generate truly unique image search queries for gallery */
+function spotGalleryQueries(spot: Spot): string[] {
+  const cat = spot.category ?? "";
+  const isFoodOrShop = ["美食", "购物", "住宿"].includes(cat);
+  const queries: string[] = [];
+  const seen = new Set<string>();
+
+  const add = (q: string) => {
+    const key = q.trim().toLowerCase();
+    if (!seen.has(key) && key.length > 1) { seen.add(key); queries.push(q.trim()); }
+  };
+
+  // 1. Main: title + category
+  add(isFoodOrShop ? `${spot.title} ${cat}` : spot.title);
+  // 2. Title + "店内" or "内部" for restaurants/hotels
+  if (isFoodOrShop) add(`${spot.title} 店内环境`);
+  // 3. Title + "菜品/商品" for food/shopping
+  if (cat === "美食") add(`${spot.title} 菜品推荐`);
+  if (cat === "购物") add(`${spot.title} 商品`);
+  // 4. Tags as independent queries (not combined with title)
+  for (const tag of spot.tags ?? []) {
+    if (tag.length >= 2 && tag !== spot.title) {
+      add(isFoodOrShop ? `${tag} ${cat} 推荐` : `${tag} 旅游`);
+    }
   }
-  return [hero, ...extras];
+  // 5. Desc-based query
+  if (spot.desc && spot.desc.length >= 4) {
+    add(spot.desc.slice(0, 15));
+  }
+  // 6. Address area for local flavor
+  if (spot.address) {
+    const area = spot.address.replace(/\d+.*$/, "").slice(-8);
+    if (area.length >= 3) add(`${area} ${cat || "风景"}`);
+  }
+
+  return queries.slice(0, 8);
 }
 
 function SpotModal({ spot, onClose }: { spot: Spot; onClose: () => void }) {
-  const gallery = useMemo(() => spotGalleryUrls(spot), [spot]);
+  const galleryQueries = useMemo(() => spotGalleryQueries(spot), [spot]);
+  const gallery = useMemo(
+    () => galleryQueries.map((q, i) => `/api/spot-image?q=${encodeURIComponent(q)}&v=${i}`),
+    [galleryQueries],
+  );
+  const [heroIdx, setHeroIdx] = useState(0);
   const [entered, setEntered] = useState(false);
   const [closing, setClosing] = useState(false);
 
@@ -535,12 +561,13 @@ function SpotModal({ spot, onClose }: { spot: Spot; onClose: () => void }) {
           transition: "transform 400ms cubic-bezier(.32,.72,0,1), opacity 300ms ease",
         }}
       >
-        {/* Hero image area */}
+        {/* Hero image area — click gallery to swap */}
         <div className="relative w-full" style={{ height: "38vh" }}>
           <img
-            src={gallery[0]}
+            key={heroIdx}
+            src={gallery[heroIdx]}
             alt={spot.title}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-cover animate-[fadeIn_300ms_ease]"
             loading="eager"
           />
           {/* Gradient overlay — stronger at bottom for text readability */}
@@ -632,24 +659,28 @@ function SpotModal({ spot, onClose }: { spot: Spot; onClose: () => void }) {
             </div>
           )}
 
-          {/* Photo gallery — horizontal scroll */}
+          {/* Photo gallery — click to swap hero image */}
           {gallery.length > 1 && (
-            <div className="no-scrollbar -mx-5 mt-4 flex gap-2 overflow-x-auto px-5">
-              {gallery.slice(1).map((url, i) => (
-                <img
+            <div className="no-scrollbar -mx-5 mt-4 flex gap-2.5 overflow-x-auto px-5">
+              {gallery.map((url, i) => (
+                <button
                   key={i}
-                  src={url}
-                  alt={`${spot.title} ${i + 2}`}
-                  className="h-[72px] w-[72px] shrink-0 rounded-xl object-cover"
-                  loading="lazy"
-                  style={{ background: "rgba(255,255,255,0.06)" }}
-                />
+                  onClick={() => setHeroIdx(i)}
+                  className={`relative h-[76px] w-[76px] shrink-0 overflow-hidden rounded-xl transition-all ${
+                    heroIdx === i
+                      ? "ring-2 ring-white/80 ring-offset-2 ring-offset-[#1a1a2e]"
+                      : "opacity-70 hover:opacity-100"
+                  }`}
+                >
+                  <img
+                    src={url}
+                    alt={`${spot.title} ${i + 1}`}
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                    style={{ background: "rgba(255,255,255,0.06)" }}
+                  />
+                </button>
               ))}
-              {gallery.length > 5 && (
-                <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-xl bg-white/8 text-[14px] font-bold text-white/60">
-                  +{gallery.length - 5}
-                </div>
-              )}
             </div>
           )}
 

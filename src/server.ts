@@ -146,7 +146,11 @@ const spotImageCache = new TTLCache<string, string>({ maxSize: 1000, ttlMs: 60 *
 
 /** Fetch a high-quality spot image from Bing China (returns images from Ctrip, Qunar, etc.) */
 async function fetchBingImage(query: string): Promise<string | null> {
-  const searchQuery = `${query} 风景 景点`;
+  // Don't blindly append "风景 景点" — it ruins food/shopping queries
+  // Only add scenic keywords if the query doesn't already contain category hints
+  const categoryHints = ["美食", "餐厅", "餐馆", "小吃", "咖啡", "酒吧", "购物", "商场", "酒店", "住宿", "民宿", "interior", "food", "restaurant", "hotel", "shop"];
+  const hasCategory = categoryHints.some((h) => query.toLowerCase().includes(h));
+  const searchQuery = hasCategory ? query : `${query} 风景 景点`;
   const url = `https://cn.bing.com/images/async?q=${encodeURIComponent(searchQuery)}&first=0&count=8&mmasync=1`;
 
   try {

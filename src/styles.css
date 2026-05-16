@@ -221,3 +221,8 @@
     transform: scale(0.975);
   }
 }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
