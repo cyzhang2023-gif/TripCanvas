@@ -473,23 +473,28 @@ const themeCoverKeywords: Record<string, string[]> = {
 };
 
 function getRouteSpecificCover(city: string, title: string, theme: string, tags: string, index: number): string {
-  // Strategy: Use different keyword combinations to ensure unique images per route
-  const keywords = themeCoverKeywords[theme];
-  if (keywords && keywords.length > 0) {
-    const keyword = keywords[index % keywords.length];
+  // Build a pool of diverse keyword candidates, then pick one by index
+  const candidates: string[] = [];
+
+  // Add theme-based keywords
+  const themeKw = themeCoverKeywords[theme];
+  if (themeKw) candidates.push(...themeKw);
+
+  // Add tag-based keywords (each tag as a candidate)
+  const tagList = tags ? tags.split(",").map(t => t.trim()).filter(t => t.length >= 2 && t !== city) : [];
+  for (const tag of tagList) candidates.push(tag);
+
+  // Add title-derived keywords
+  const titleWords = title.replace(/[：:，,。.！!？?""''《》]/g, " ").split(/\s+/).filter(w => w.length >= 2 && w !== city);
+  if (titleWords.length >= 2) candidates.push(titleWords.slice(0, 2).join(" "));
+  if (titleWords.length >= 1) candidates.push(titleWords[0]);
+
+  // Deduplicate
+  const unique = [...new Set(candidates)];
+
+  if (unique.length > 0) {
+    const keyword = unique[index % unique.length];
     return getRouteCoverUrl(city, keyword);
-  }
-  // Use title keywords as hint for uniqueness
-  const titleWords = title.replace(/[：:，,。.！!？?]/g, " ").split(/\s+/).filter(w => w.length >= 2 && w !== city);
-  if (titleWords.length > 0) {
-    const hint = titleWords.slice(0, 2).join(" ");
-    return getRouteCoverUrl(city, hint);
-  }
-  // Use tags
-  const tagList = tags ? tags.split(",").map(t => t.trim()).filter(Boolean) : [];
-  if (tagList.length > 0) {
-    const tagHint = tagList[index % tagList.length];
-    return getRouteCoverUrl(city, tagHint);
   }
   return getRouteCoverUrl(city);
 }
