@@ -454,9 +454,8 @@ function RouteCard({
   const sub = route.sourceVerified
     ? `${route.sourceName ?? route.source} · 官方来源`
     : "待人工核验";
-  const includes = route.includes?.length
-    ? route.includes
-    : ["景点", "美食", "住宿", "购物", "休闲"];
+  // Estimate steps from spots and days: ~6000 steps per spot-day combo, with variance
+  const estSteps = Math.round((route.spots * 2800 + route.days * 4500) / 10000 * 10) / 10;
   return (
     <article className="grid grid-cols-[30%_1fr] gap-2 rounded-[16px] bg-white pr-1 shadow-[0_8px_24px_rgba(38,43,70,.08)]">
       <div className="relative h-[104px] overflow-hidden rounded-[16px]">
@@ -480,23 +479,19 @@ function RouteCard({
           <Heart className="h-3.5 w-3.5 text-[#ff6b8d]" /> {fmtLikes(route.likes)}
         </div>
         <p className="mt-0.5 truncate text-[10px] text-[#656a75]">{sub}</p>
-        <div className="mt-1 flex gap-2">
-          {route.tags.slice(0, 3).map((t) => (
-            <span key={t} className="text-[9px] font-bold text-[#4f57a6]">
-              {t}
-            </span>
-          ))}
-        </div>
-        <div className="mt-1 flex gap-1 overflow-hidden">
-          {includes.slice(0, 5).map((item) => (
-            <span
-              key={item}
-              className="rounded-full bg-[#f3f1ff] px-1.5 py-px text-[8px] font-bold text-[#6554e8]"
-            >
-              {item}
-            </span>
-          ))}
-        </div>
+        {/* Tags as pill badges */}
+        {route.tags.length > 0 && (
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {route.tags.slice(0, 4).map((t) => (
+              <span
+                key={t}
+                className="rounded-full bg-[#f3f1ff] px-2 py-[2px] text-[9px] font-bold text-[#6554e8]"
+              >
+                {t}
+              </span>
+            ))}
+          </div>
+        )}
         <div className="mt-1.5 flex items-center justify-between">
           <div className="flex items-center gap-2 text-[9px] text-[#4f5561]">
             <span className="flex items-center gap-0.5">
@@ -506,7 +501,7 @@ function RouteCard({
               <MapPin className="h-3 w-3" /> {route.spots}个地点
             </span>
             <span className="flex items-center gap-0.5">
-              <Footprints className="h-3 w-3" /> {Math.max(1, Math.round(route.spots * 0.08))}.0w步
+              <Footprints className="h-3 w-3" /> {estSteps}w步
             </span>
           </div>
           <button
