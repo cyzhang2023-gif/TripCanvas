@@ -145,13 +145,16 @@ const travelCache = new TTLCache<string, { data: Record<string, TravelInfo>; ts:
 const spotImageCache = new TTLCache<string, string>({ maxSize: 1000, ttlMs: 60 * 60 * 1000 });
 
 /** Fetch a high-quality spot image from Bing China (returns images from Ctrip, Qunar, etc.) */
-async function fetchBingImage(query: string): Promise<string | null> {
-  // Don't blindly append "风景 景点" — it ruins food/shopping queries
-  // Only add scenic keywords if the query doesn't already contain category hints
+/**
+ * Fetch ranked image URLs from Bing CN for a query.
+ * Returns an array of safe, deduplicated image URLs sorted by preference.
+ */
+async function fetchBingImages(query: string): Promise<string[]> {
   const categoryHints = ["美食", "餐厅", "餐馆", "小吃", "咖啡", "酒吧", "购物", "商场", "酒店", "住宿", "民宿", "interior", "food", "restaurant", "hotel", "shop"];
   const hasCategory = categoryHints.some((h) => query.toLowerCase().includes(h));
   const searchQuery = hasCategory ? query : `${query} 风景 景点`;
-  const url = `https://cn.bing.com/images/async?q=${encodeURIComponent(searchQuery)}&first=0&count=8&mmasync=1`;
+  // Request more results for gallery support
+  const url = `https://cn.bing.com/images/async?q=${encodeURIComponent(searchQuery)}&first=0&count=20&mmasync=1`;
 
   try {
     const res = await fetch(url, {
@@ -160,12 +163,12 @@ async function fetchBingImage(query: string): Promise<string | null> {
           "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       },
     });
-    if (!res.ok) return null;
+    if (!res.ok) return [];
     const html = await res.text();
 
     // Extract murl (media URL) from Bing's response
     const urlMatches = html.match(/murl&quot;:&quot;(https?:\/\/[^&]+)/g);
-    if (!urlMatches || urlMatches.length === 0) return null;
+    if (!urlMatches || urlMatches.length === 0) return [];
 
     const urls = urlMatches.map((m) => m.replace('murl&quot;:&quot;', ''));
 
@@ -180,7 +183,6 @@ async function fetchBingImage(query: string): Promise<string | null> {
     ];
     const safeUrls = urls.filter((u) => !blockedHosts.some((h) => u.includes(h)));
 
-    // Prefer images from known reliable CDNs
     const preferredHosts = [
       "ctrip.com", "qunarzz.com", "mafengwo.net", "duitang.com", "bdimg.com",
       "bcebos.com", "sinaimg.cn", "zhimg.com", "youimg1.c-ctrip.com",
@@ -188,25 +190,38 @@ async function fetchBingImage(query: string): Promise<string | null> {
       "cdn.britannica.com", "upload.wikimedia.org", "static1.thetravelimages.com",
       "tripsavvy.com", "lonelyplanet.com", "worldatlas.com", "aceadventurer.com",
     ];
-    const preferred = safeUrls.find((u) => preferredHosts.some((h) => u.includes(h)));
-    if (preferred) {
-      console.log(`[Image] Bing CN (preferred): "${query}" → ${preferred.slice(0, 80)}`);
-      return preferred;
-    }
-
-    // Fall back to first safe HTTPS image (skip huaban which has inconsistent loading)
     const skipUnreliable = ["huaban.com", "best-wallpaper.net", "wallhaven.cc"];
-    const reliable = safeUrls.filter((u) => !skipUnreliable.some((h) => u.includes(h)));
-    const httpsUrl = reliable.find((u) => u.startsWith("https://")) ?? safeUrls.find((u) => u.startsWith("https://"));
-    const finalUrl = httpsUrl ?? safeUrls[0];
-    if (finalUrl) {
-      console.log(`[Image] Bing CN: "${query}" → ${finalUrl.slice(0, 80)}`);
-      return finalUrl;
+
+    // Sort: preferred hosts first, then reliable HTTPS, then rest
+    const ranked: string[] = [];
+    const seen = new Set<string>();
+    const addUnique = (u: string) => { if (!seen.has(u)) { seen.add(u); ranked.push(u); } };
+
+    // 1. Preferred hosts
+    for (const u of safeUrls) {
+      if (preferredHosts.some((h) => u.includes(h))) addUnique(u);
     }
+    // 2. Reliable HTTPS
+    for (const u of safeUrls) {
+      if (u.startsWith("https://") && !skipUnreliable.some((h) => u.includes(h))) addUnique(u);
+    }
+    // 3. Everything else
+    for (const u of safeUrls) addUnique(u);
+
+    if (ranked.length > 0) {
+      console.log(`[Image] Bing CN: "${query}" → ${ranked.length} results`);
+    }
+    return ranked;
   } catch (err) {
     console.error(`[Image] Bing fetch failed for "${query}":`, err);
   }
-  return null;
+  return [];
+}
+
+/** Compat wrapper — returns single best image */
+async function fetchBingImage(query: string): Promise<string | null> {
+  const results = await fetchBingImages(query);
+  return results[0] ?? null;
 }
 
 /** Fallback: fetch image from Wikipedia (for international spots) */
@@ -870,6 +885,37 @@ async function handleApiRequest(request: Request, env: unknown): Promise<Respons
       console.error("[Travel] Error:", err);
       return apiError(500, "获取路线信息失败");
     }
+  }
+
+  /* ─── Spot images batch — returns JSON array of image URLs for gallery ─── */
+  if (pathname === "/api/spot-images" && request.method === "GET") {
+    const query = url.searchParams.get("q") ?? "";
+    const count = Math.min(parseInt(url.searchParams.get("count") ?? "6"), 12);
+    if (!query) return apiError(400, "缺少搜索词");
+
+    // Check batch cache
+    const batchKey = `__batch__${query}__${count}`;
+    const cachedBatch = spotImageCache.get(batchKey);
+    if (cachedBatch) {
+      return apiJson(JSON.parse(cachedBatch));
+    }
+
+    const bingResults = await fetchBingImages(query);
+    const results = bingResults.slice(0, count);
+
+    // If not enough from Bing, try Wikipedia as supplement
+    if (results.length < count) {
+      const wikiUrl = await fetchWikipediaImage(query);
+      if (wikiUrl && !results.includes(wikiUrl)) results.push(wikiUrl);
+    }
+
+    // Fill remaining with fallback
+    while (results.length < count) {
+      results.push(getCategoryFallback(query));
+    }
+
+    spotImageCache.set(batchKey, JSON.stringify(results));
+    return apiJson(results);
   }
 
   /* ─── Spot image — Bing CN (Ctrip/Qunar CDN) with Wikipedia fallback ─── */

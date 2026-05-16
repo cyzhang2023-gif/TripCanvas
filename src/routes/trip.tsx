@@ -477,49 +477,27 @@ function TripMetaBar({ trip }: { trip: TripType }) {
 
 /* ─── Full-screen bottom-sheet detail modal ─── */
 /** Generate truly unique image search queries for gallery */
-function spotGalleryQueries(spot: Spot): string[] {
+/** Build the search query for a spot's images — one query, multiple results */
+function spotSearchQuery(spot: Spot): string {
   const cat = spot.category ?? "";
-  const isFoodOrShop = ["美食", "购物", "住宿"].includes(cat);
-  const queries: string[] = [];
-  const seen = new Set<string>();
-
-  const add = (q: string) => {
-    const key = q.trim().toLowerCase();
-    if (!seen.has(key) && key.length > 1) { seen.add(key); queries.push(q.trim()); }
-  };
-
-  // 1. Main: title + category
-  add(isFoodOrShop ? `${spot.title} ${cat}` : spot.title);
-  // 2. Title + "店内" or "内部" for restaurants/hotels
-  if (isFoodOrShop) add(`${spot.title} 店内环境`);
-  // 3. Title + "菜品/商品" for food/shopping
-  if (cat === "美食") add(`${spot.title} 菜品推荐`);
-  if (cat === "购物") add(`${spot.title} 商品`);
-  // 4. Tags as independent queries (not combined with title)
-  for (const tag of spot.tags ?? []) {
-    if (tag.length >= 2 && tag !== spot.title) {
-      add(isFoodOrShop ? `${tag} ${cat} 推荐` : `${tag} 旅游`);
-    }
-  }
-  // 5. Desc-based query
-  if (spot.desc && spot.desc.length >= 4) {
-    add(spot.desc.slice(0, 15));
-  }
-  // 6. Address area for local flavor
-  if (spot.address) {
-    const area = spot.address.replace(/\d+.*$/, "").slice(-8);
-    if (area.length >= 3) add(`${area} ${cat || "风景"}`);
-  }
-
-  return queries.slice(0, 8);
+  if (["美食", "购物", "住宿"].includes(cat)) return `${spot.title} ${cat}`;
+  return spot.title;
 }
 
 function SpotModal({ spot, onClose }: { spot: Spot; onClose: () => void }) {
-  const galleryQueries = useMemo(() => spotGalleryQueries(spot), [spot]);
-  const gallery = useMemo(
-    () => galleryQueries.map((q, i) => `/api/spot-image?q=${encodeURIComponent(q)}&v=${i}`),
-    [galleryQueries],
-  );
+  const searchQuery = useMemo(() => spotSearchQuery(spot), [spot]);
+  // Fetch gallery images from batch API — single query, 6 unique results
+  const [gallery, setGallery] = useState<string[]>([spotImageUrl(spot)]);
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/spot-images?q=${encodeURIComponent(searchQuery)}&count=6`)
+      .then((r) => r.json())
+      .then((urls: string[]) => {
+        if (!cancelled && Array.isArray(urls) && urls.length > 0) setGallery(urls);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [searchQuery]);
   const [heroIdx, setHeroIdx] = useState(0);
   const [entered, setEntered] = useState(false);
   const [closing, setClosing] = useState(false);
