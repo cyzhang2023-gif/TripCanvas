@@ -293,8 +293,8 @@ function Trip() {
           </div>
         )}
 
-        {/* Bottom shadow fade */}
-        <div className="h-1 bg-gradient-to-b from-[var(--background)] to-transparent" />
+        {/* Bottom shadow edge */}
+        <div className="h-2 bg-gradient-to-b from-[var(--background)] to-transparent shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08)]" />
       </div>
 
       {/* Day sections */}
@@ -919,7 +919,8 @@ function DaySection({
   const hasMore = day.spots.length > 3 && !editing;
 
   return (
-    <div className={`transition-opacity duration-200 ${isActive ? "opacity-100" : "opacity-40"}`}>
+    <div className={isActive ? "" : "hidden"}>
+
       {/* Day header */}
       <div className="rounded-xl bg-white px-3 py-2.5 shadow-sm">
         <div className="flex items-center justify-between">
