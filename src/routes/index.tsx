@@ -237,7 +237,7 @@ function Index() {
       {/* ══════ 灵感地图 + 当季精选 ══════ */}
       <section className="mt-3 px-3 grid grid-cols-2 gap-2">
         {/* 灵感地图 */}
-        <Link to="/destinations" className="rounded-2xl bg-card p-2.5 shadow-[var(--shadow-soft)] relative overflow-hidden block">
+        <Link to="/inspiration" className="rounded-2xl bg-card p-2.5 shadow-[var(--shadow-soft)] relative overflow-hidden block">
           <div className="flex items-start justify-between">
             <div>
               <h3 className="font-bold text-[12px] leading-none">灵感地图</h3>
