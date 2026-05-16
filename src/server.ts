@@ -448,13 +448,50 @@ const citySearchTerms: Record<string, string> = {
   阿联酋: "Dubai skyline Burj Khalifa", 捷克: "Prague old town square Czech",
 };
 
-function getRouteCoverUrl(city: string): string {
+function getRouteCoverUrl(city: string, hint?: string): string {
+  // If a hint (theme/title keywords) is provided, use city + hint for a unique image
+  if (hint) {
+    return `/api/spot-image?q=${encodeURIComponent(city + " " + hint)}`;
+  }
   const searchTerm = citySearchTerms[city];
   if (searchTerm) {
     return `/api/spot-image?q=${encodeURIComponent(searchTerm)}`;
   }
   // Fallback: search with city name directly
   return `/api/spot-image?q=${encodeURIComponent(city + " 景点 风景")}`;
+}
+
+/** Extract diverse image search keywords from route data to avoid duplicate covers */
+const themeCoverKeywords: Record<string, string[]> = {
+  citywalk: ["街景 漫步", "老城区 小巷", "城市夜景"],
+  food: ["美食 餐厅", "当地美食 市场", "特色小吃 街头"],
+  beach: ["海滩 日落", "海景 度假", "海岸线 风光"],
+  luxury: ["奢华酒店 泳池", "高级度假村", "豪华 全景"],
+  nature: ["自然风光 山", "湖泊 森林", "日出 山峰"],
+  shopping: ["购物 商圈", "商场 夜市", "集市 特产"],
+  culture: ["历史 古迹", "博物馆 文化", "寺庙 建筑"],
+};
+
+function getRouteSpecificCover(city: string, title: string, theme: string, tags: string, index: number): string {
+  // Strategy: Use different keyword combinations to ensure unique images per route
+  const keywords = themeCoverKeywords[theme];
+  if (keywords && keywords.length > 0) {
+    const keyword = keywords[index % keywords.length];
+    return getRouteCoverUrl(city, keyword);
+  }
+  // Use title keywords as hint for uniqueness
+  const titleWords = title.replace(/[：:，,。.！!？?]/g, " ").split(/\s+/).filter(w => w.length >= 2 && w !== city);
+  if (titleWords.length > 0) {
+    const hint = titleWords.slice(0, 2).join(" ");
+    return getRouteCoverUrl(city, hint);
+  }
+  // Use tags
+  const tagList = tags ? tags.split(",").map(t => t.trim()).filter(Boolean) : [];
+  if (tagList.length > 0) {
+    const tagHint = tagList[index % tagList.length];
+    return getRouteCoverUrl(city, tagHint);
+  }
+  return getRouteCoverUrl(city);
 }
 
 /** Persistent cache for validated destination cover images (survives spot-image cache clears) */
@@ -1008,21 +1045,34 @@ async function handleApiRequest(request: Request, env: unknown): Promise<Respons
           LIMIT 20
         `;
         const n8nRes = await pool.query(n8nSql, dest ? [dest] : []);
-        n8nExplore = (n8nRes.rows as Record<string, unknown>[]).map((r) => ({
-          id: `n8n-${r.id}`,
-          title: (r.route_title as string) || "AI 精选路线",
-          days: Number(r.days_count) || 5,
-          spots: Number(r.total_spots) || 0,
-          source: "AI 智能生成",
-          sourceName: "Routey AI",
-          sourceVerified: true,
-          qualityScore: Number(r.quality_score) || 80,
-          includes: undefined,
-          likes: Number(r.likes) || 0,
-          cover: (r.cover_url as string) || getRouteCoverUrl((r.city as string) || ""),
-          tags: r.tags ? String(r.tags).split(",").map((t: string) => t.trim()) : [],
-          profileKey: `n8n-${r.id}`,
-        }));
+        // Track per-city index to assign different covers for same-city routes
+        const cityIndex = new Map<string, number>();
+        n8nExplore = (n8nRes.rows as Record<string, unknown>[]).map((r) => {
+          const city = (r.city as string) || "";
+          const idx = cityIndex.get(city) ?? 0;
+          cityIndex.set(city, idx + 1);
+          return {
+            id: `n8n-${r.id}`,
+            title: (r.route_title as string) || "AI 精选路线",
+            days: Number(r.days_count) || 5,
+            spots: Number(r.total_spots) || 0,
+            source: "AI 智能生成",
+            sourceName: "Routey AI",
+            sourceVerified: true,
+            qualityScore: Number(r.quality_score) || 80,
+            includes: undefined,
+            likes: Number(r.likes) || 0,
+            cover: (r.cover_url as string) || getRouteSpecificCover(
+              city,
+              (r.route_title as string) || "",
+              (r.route_theme as string) || "",
+              (r.tags as string) || "",
+              idx,
+            ),
+            tags: r.tags ? String(r.tags).split(",").map((t: string) => t.trim()) : [],
+            profileKey: `n8n-${r.id}`,
+          };
+        });
       }
     } catch (e) {
       console.warn("[n8n explore] Failed to fetch n8n routes:", e);
@@ -1167,11 +1217,23 @@ async function handleApiRequest(request: Request, env: unknown): Promise<Respons
     sql += ` LIMIT $${params.length}`;
 
     const result = await pool.query(sql, params);
-    // Inject city-specific cover URLs for routes that have empty cover_url
-    const rows = (result.rows as Record<string, unknown>[]).map((r) => ({
-      ...r,
-      cover_url: (r.cover_url as string) || getRouteCoverUrl((r.city as string) || ""),
-    }));
+    // Inject city-specific cover URLs — use route-specific keywords to avoid duplicates
+    const featuredCityIdx = new Map<string, number>();
+    const rows = (result.rows as Record<string, unknown>[]).map((r) => {
+      const city = (r.city as string) || "";
+      const idx = featuredCityIdx.get(city) ?? 0;
+      featuredCityIdx.set(city, idx + 1);
+      return {
+        ...r,
+        cover_url: (r.cover_url as string) || getRouteSpecificCover(
+          city,
+          (r.route_title as string) || "",
+          (r.route_theme as string) || "",
+          (r.tags as string) || "",
+          idx,
+        ),
+      };
+    });
     return apiJson(rows);
   }
 
