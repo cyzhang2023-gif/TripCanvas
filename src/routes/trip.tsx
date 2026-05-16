@@ -429,80 +429,111 @@ function TripMetaBar({ trip }: { trip: TripType }) {
   );
 }
 
-/* ─── Half-page detail modal ─── */
+/* ─── Full-screen bottom-sheet detail modal ─── */
 function SpotModal({ spot, onClose }: { spot: Spot; onClose: () => void }) {
   const imgUrl = spotImageUrl(spot);
+  const [entered, setEntered] = useState(false);
+  const [closing, setClosing] = useState(false);
+
+  useEffect(() => {
+    requestAnimationFrame(() => requestAnimationFrame(() => setEntered(true)));
+  }, []);
+
+  const handleClose = () => {
+    setClosing(true);
+    setTimeout(onClose, 320);
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-5" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center"
+      style={{
+        background: entered && !closing ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0)",
+        transition: "background 350ms cubic-bezier(.4,0,.2,1)",
+      }}
+      onClick={handleClose}
+    >
       <div
-        className="relative w-full max-w-sm overflow-hidden rounded-2xl shadow-2xl"
+        className="relative w-full max-w-md overflow-hidden rounded-t-3xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
-        style={{ maxHeight: "60vh" }}
+        style={{
+          maxHeight: "92vh",
+          transform: entered && !closing ? "translateY(0)" : "translateY(100%)",
+          opacity: entered && !closing ? 1 : 0,
+          transition: "transform 380ms cubic-bezier(.32,.72,0,1), opacity 280ms ease",
+        }}
       >
-        {/* Full HD background image */}
-        <img
-          src={imgUrl}
-          alt={spot.title}
-          className="absolute inset-0 h-full w-full object-cover"
-          loading="eager"
-        />
+        {/* Pull handle */}
+        <div className="flex justify-center py-2.5">
+          <div className="h-1 w-10 rounded-full bg-gray-300" />
+        </div>
 
-        {/* Dark overlay for readability */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/20" />
+        {/* Hero image — large, 50vw tall */}
+        <div className="relative mx-4 overflow-hidden rounded-2xl" style={{ height: "42vh" }}>
+          <img
+            src={imgUrl}
+            alt={spot.title}
+            className="h-full w-full object-cover"
+            loading="eager"
+            style={{ imageRendering: "auto" }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-        {/* Content over image */}
-        <div className="relative flex min-h-[320px] flex-col justify-end p-5">
-          {/* Close button */}
+          {/* Close button floating on image */}
           <button
-            onClick={onClose}
-            className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/30 text-white/90 backdrop-blur-sm transition hover:bg-black/50"
+            onClick={handleClose}
+            className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-md"
+            style={{ transition: "background 200ms" }}
           >
-            <X className="h-4 w-4" />
+            <X className="h-4.5 w-4.5" />
           </button>
 
-          {/* Badges row */}
-          <div className="flex items-center gap-2">
+          {/* Badges on image bottom */}
+          <div className="absolute bottom-3 left-4 flex items-center gap-2">
             {spot.category && (
-              <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
+              <span className="rounded-full bg-white/25 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-md">
                 {spot.category}
               </span>
             )}
             {spot.rating && (
-              <span className="flex items-center gap-0.5 text-[11px] text-amber-300">
-                <Star className="h-3 w-3 fill-amber-300" /> {spot.rating}
+              <span className="flex items-center gap-0.5 text-[12px] font-bold text-amber-300 drop-shadow-md">
+                <Star className="h-3.5 w-3.5 fill-amber-300" /> {spot.rating}
               </span>
             )}
             {spot.price && (
-              <span className="text-[11px] text-white/70">{spot.price}</span>
+              <span className="text-[12px] font-medium text-white/90 drop-shadow-md">{spot.price}</span>
             )}
           </div>
+        </div>
 
-          {/* Title & desc */}
-          <h3
-            className="mt-1.5 text-xl font-bold text-white"
-            style={{ textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}
-          >
+        {/* Content below image — scrollable */}
+        <div className="overflow-y-auto px-5 pb-8 pt-4" style={{ maxHeight: "calc(92vh - 42vh - 44px)" }}>
+          {/* Title */}
+          <h3 className="text-[20px] font-extrabold leading-tight text-gray-900">
             {spot.title}
           </h3>
-          <p className="text-xs text-white/70">{spot.desc}</p>
+          {spot.desc && (
+            <p className="mt-1 text-[13px] leading-relaxed text-gray-500">{spot.desc}</p>
+          )}
 
           {/* Intro */}
           {spot.intro && (
-            <p className="mt-2 text-[12px] leading-5 text-white/85">{spot.intro}</p>
+            <p className="mt-3 rounded-xl bg-gray-50 px-3.5 py-3 text-[13px] leading-6 text-gray-700">
+              {spot.intro}
+            </p>
           )}
 
           {/* Address & Duration */}
           {(spot.address || spot.durationMin) && (
-            <div className="mt-2 flex flex-wrap items-center gap-3 text-[11px] text-white/75">
+            <div className="mt-3.5 flex flex-wrap items-center gap-4 text-[12px] text-gray-500">
               {spot.address && (
-                <span className="flex items-center gap-1">
-                  <MapPin className="h-3 w-3 shrink-0" /> {spot.address}
+                <span className="flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5 shrink-0 text-gray-400" /> {spot.address}
                 </span>
               )}
               {spot.durationMin && (
-                <span className="flex items-center gap-1">
-                  <Clock className="h-3 w-3 shrink-0" /> {spot.durationMin >= 60 ? `${Math.floor(spot.durationMin / 60)}h${spot.durationMin % 60 ? `${spot.durationMin % 60}min` : ""}` : `${spot.durationMin}min`}
+                <span className="flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5 shrink-0 text-gray-400" /> {spot.durationMin >= 60 ? `${Math.floor(spot.durationMin / 60)}h${spot.durationMin % 60 ? `${spot.durationMin % 60}min` : ""}` : `${spot.durationMin}min`}
                 </span>
               )}
             </div>
@@ -510,11 +541,11 @@ function SpotModal({ spot, onClose }: { spot: Spot; onClose: () => void }) {
 
           {/* Tags */}
           {spot.tags && spot.tags.length > 0 && (
-            <div className="mt-2.5 flex flex-wrap gap-1.5">
+            <div className="mt-3.5 flex flex-wrap gap-2">
               {spot.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-[10px] font-medium text-white/90 backdrop-blur-sm"
+                  className="rounded-full bg-gray-100 px-3 py-1 text-[11px] font-medium text-gray-600"
                 >
                   {tag}
                 </span>
@@ -527,9 +558,9 @@ function SpotModal({ spot, onClose }: { spot: Spot; onClose: () => void }) {
             href={amapNavUrl(spot)}
             target="_blank"
             rel="noreferrer"
-            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-white py-2.5 text-xs font-semibold text-slate-900 shadow-lg transition active:scale-[0.98]"
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3.5 text-[14px] font-bold text-white shadow-lg transition active:scale-[0.98]"
           >
-            <Navigation className="h-3.5 w-3.5" /> 在高德地图中导航
+            <Navigation className="h-4 w-4" /> 在高德地图中导航
           </a>
         </div>
       </div>
