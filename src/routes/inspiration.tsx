@@ -218,29 +218,49 @@ function InspirationMap() {
           <MapPin className="h-4 w-4 text-primary" />
         </button>
 
-        {/* Floating destination bubbles */}
-        {displayBubbles.map((bubble) => {
+        {/* Floating destination bubbles with animations */}
+        <style>{`
+          @keyframes bubble-float {
+            0%, 100% { transform: translate(-50%, -50%) translateY(0); }
+            50% { transform: translate(-50%, -50%) translateY(-6px); }
+          }
+          @keyframes bubble-pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(67,97,238,0.35); }
+            70% { box-shadow: 0 0 0 8px rgba(67,97,238,0); }
+            100% { box-shadow: 0 0 0 0 rgba(67,97,238,0); }
+          }
+          @keyframes bubble-fade-in {
+            from { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+          }
+        `}</style>
+        {displayBubbles.map((bubble, idx) => {
           const isLg = bubble.size === "lg";
           const isMd = bubble.size === "md";
           const px = isLg ? 64 : isMd ? 50 : 40;
+          const floatDuration = 3 + idx * 0.4;
+          const floatDelay = idx * 0.6;
 
           return (
             <Link
               key={bubble.name}
               to="/explore"
               search={{ dest: bubble.query.split(" ")[0] }}
-              className="absolute z-[6] flex flex-col items-center transition-transform active:scale-90"
-              style={{ top: `${bubble.top}%`, left: `${bubble.left}%`, transform: "translate(-50%,-50%)" }}
+              className="absolute z-[6] flex flex-col items-center active:scale-90"
+              style={{
+                top: `${bubble.top}%`,
+                left: `${bubble.left}%`,
+                animation: `bubble-fade-in 0.5s ${floatDelay * 0.3}s both, bubble-float ${floatDuration}s ${floatDelay}s ease-in-out infinite`,
+              }}
             >
               <div
-                className="overflow-hidden rounded-full shadow-lg"
+                className="overflow-hidden rounded-full"
                 style={{
                   width: px,
                   height: px,
                   border: isLg ? "3px solid rgba(67,97,238,0.45)" : "2.5px solid white",
-                  boxShadow: isLg
-                    ? "0 0 0 3px rgba(67,97,238,0.18), 0 4px 12px rgba(0,0,0,0.15)"
-                    : "0 3px 10px rgba(0,0,0,0.12)",
+                  boxShadow: "0 3px 12px rgba(0,0,0,0.15)",
+                  animation: isLg ? "bubble-pulse-ring 2.5s ease-out infinite" : undefined,
                 }}
               >
                 <img
