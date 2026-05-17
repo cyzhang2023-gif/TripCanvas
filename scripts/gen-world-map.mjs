@@ -3,17 +3,16 @@ import { feature } from "topojson-client";
 
 const topo = JSON.parse(
   readFileSync(
-    new URL("../node_modules/world-atlas/land-110m.json", import.meta.url),
+    new URL("../node_modules/world-atlas/countries-110m.json", import.meta.url),
     "utf8"
   )
 );
-const land = feature(topo, topo.objects.land);
+const countries = feature(topo, topo.objects.countries);
 
 const W = 1000;
 const LAT_TOP = 78, LAT_BOT = -60;
-const LAT_RANGE = LAT_TOP - LAT_BOT; // 138°
-const H = Math.round((LAT_RANGE / 360) * W * 2); // ~767 → keep proportional
-const ACTUAL_H = 680; // slightly compressed for better container fit
+const LAT_RANGE = LAT_TOP - LAT_BOT;
+const ACTUAL_H = 680;
 
 function project(lng, lat) {
   const x = ((lng + 180) / 360) * W;
@@ -38,12 +37,29 @@ function geoToSvgPaths(geometry) {
   return paths.join(" ");
 }
 
-let d = "";
-if (land.type === "FeatureCollection") {
-  for (const f of land.features) d += geoToSvgPaths(f.geometry) + " ";
-} else {
-  d = geoToSvgPaths(land.geometry);
-}
+// Soft pastel palette — 12 colors that cycle across countries
+const palette = [
+  "#a8d8b9", // sage green
+  "#f7d1a6", // peach
+  "#b5cfe0", // sky blue
+  "#e6c2d9", // rose
+  "#c9e4a5", // lime green
+  "#f5c6aa", // salmon
+  "#a9c8e8", // cornflower
+  "#d4e8b0", // mint
+  "#f0d5c8", // blush
+  "#b8d4cb", // seafoam
+  "#e8d4a2", // sand
+  "#c3b8d8", // lavender
+];
+
+// Generate country paths with colors
+const countryPaths = countries.features.map((f, i) => {
+  const d = geoToSvgPaths(f.geometry);
+  if (!d.trim()) return "";
+  const color = palette[i % palette.length];
+  return `  <path d="${d}" fill="${color}" stroke="#fff" stroke-width="0.5" stroke-linejoin="round"/>`;
+}).filter(Boolean).join("\n");
 
 // Grid lines
 const gridLats = [60, 40, 20, 0, -20, -40];
@@ -51,28 +67,34 @@ const gridLngs = [-120, -60, 0, 60, 120];
 const gridLines = [
   ...gridLats.map(lat => {
     const [, y] = project(0, lat).split(",");
-    return `<line x1="0" y1="${y}" x2="${W}" y2="${y}"/>`;
+    return `    <line x1="0" y1="${y}" x2="${W}" y2="${y}"/>`;
   }),
   ...gridLngs.map(lng => {
     const [x] = project(lng, 0).split(",");
-    return `<line x1="${x}" y1="0" x2="${x}" y2="${ACTUAL_H}"/>`;
+    return `    <line x1="${x}" y1="0" x2="${x}" y2="${ACTUAL_H}"/>`;
   }),
-].join("\n    ");
+].join("\n");
 
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${ACTUAL_H}">
   <defs>
     <linearGradient id="ocean" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#dae9f4"/>
-      <stop offset="50%" stop-color="#d0e4f2"/>
-      <stop offset="100%" stop-color="#c8dced"/>
+      <stop offset="0%" stop-color="#d6ebf5"/>
+      <stop offset="50%" stop-color="#c8e1f0"/>
+      <stop offset="100%" stop-color="#bdd8ec"/>
     </linearGradient>
   </defs>
   <rect width="${W}" height="${ACTUAL_H}" fill="url(#ocean)"/>
-  <g stroke="#b8ceda" stroke-width="0.4" fill="none" opacity="0.3" stroke-dasharray="5 4">
-    ${gridLines}
+  <g stroke="#d0e2ee" stroke-width="0.3" fill="none" opacity="0.3" stroke-dasharray="5 4">
+${gridLines}
   </g>
-  <path d="${d.trim()}" fill="#a8c4a2" fill-opacity="0.55" stroke="#8aad84" stroke-width="0.6" stroke-linejoin="round"/>
+${countryPaths}
 </svg>`;
 
 writeFileSync(new URL("../public/world-map.svg", import.meta.url), svg);
-console.log(`Generated public/world-map.svg (${Math.round(svg.length / 1024)} KB, ${W}×${ACTUAL_H})`);
+console.log(`Generated public/world-map.svg (${Math.round(svg.length / 1024)} KB, ${W}×${ACTUAL_H}, ${countries.features.length} countries)`);
+
+// Clean up the PNG if it exists (we only need SVG)
+try {
+  const { unlinkSync } = await import("fs");
+  unlinkSync(new URL("../public/world-map.png", import.meta.url));
+} catch {}
