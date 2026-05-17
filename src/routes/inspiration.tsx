@@ -11,7 +11,7 @@ import {
   Share2,
   Snowflake,
 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { useFeaturedRoutes, type FeaturedRoute } from "@/lib/tripStore";
 
@@ -90,33 +90,31 @@ const allDestinations: MapBubble[] = [
 const MAP_CANVAS_W = 260; // % of container width
 
 type ViewState = { scale: number; left: number; top: number };
-const continentView: Record<string, ViewState> = (() => {
-  const s0 = 100 / MAP_CANVAS_W; // 0.385 — fits full map
-  const s1 = 0.82; // zoomed-in scale
-  // Canvas aspect: SVG is 1000:383, canvas height = canvasW * 383/1000
-  // Container: 100% wide, 260px tall. Canvas at 260% width -> height = 260% * 383/1000 = 99.6% (≈100%)
-  // To center continent at (cx%, cy%) of SVG in the container:
-  //   left = 50 - cx * MAP_CANVAS_W * s1 / 100
-  //   top  = 50 - cy * (MAP_CANVAS_W * 383/1000) * s1 / 100
-  // but top is in % of container height, canvas height ≈ 100% of container
-  const canvasH = MAP_CANVAS_W * 383 / 1000; // 99.6%
-  function view(cx: number, cy: number): ViewState {
+const CANVAS_H = MAP_CANVAS_W * 383 / 1000; // canvas height as % of container WIDTH
+const S0 = 100 / MAP_CANVAS_W; // 0.385 — fits full map width
+const S1 = 0.82; // zoomed-in scale
+
+function computeViews(ar: number): Record<string, ViewState> {
+  // ar = containerWidth / containerHeight
+  // `left: X%` is X% of containerW, `top: Y%` is Y% of containerH
+  // Canvas height is CANVAS_H% of containerW, so in containerH% it's CANVAS_H * ar
+  function view(cx: number, cy: number, s: number): ViewState {
     return {
-      scale: s1,
-      left: 50 - cx / 100 * MAP_CANVAS_W * s1,
-      top: 50 - cy / 100 * canvasH * s1,
+      scale: s,
+      left: 50 - (cx / 100) * MAP_CANVAS_W * s,
+      top: 50 - (cy / 100) * CANVAS_H * s * ar,
     };
   }
   return {
-    "全部": { scale: s0, left: (100 - MAP_CANVAS_W * s0) / 2, top: (100 - canvasH * s0) / 2 },
-    "亚洲": view(78, 42),
-    "欧洲": view(51, 21),
-    "北美洲": view(20, 32),
-    "南美洲": view(31, 72),
-    "非洲": view(56, 54),
-    "大洋洲": view(95, 77),
+    "全部": { scale: S0, left: (100 - MAP_CANVAS_W * S0) / 2, top: (100 - CANVAS_H * S0 * ar) / 2 },
+    "亚洲": view(78, 42, S1),
+    "欧洲": view(51, 21, S1),
+    "北美洲": view(20, 32, S1),
+    "南美洲": view(31, 72, S1),
+    "非洲": view(56, 54, S1),
+    "大洋洲": view(95, 77, S1),
   };
-})();
+}
 
 function pickBubbles(pool: MapBubble[], count: number, minDist = 14): MapBubble[] {
   const shuffled = [...pool].sort(() => Math.random() - 0.5);
@@ -182,6 +180,21 @@ function InspirationMap() {
   const [activeContinent, setActiveContinent] = useState("全部");
   const [recoOffset, setRecoOffset] = useState(0);
 
+  const mapRef = useRef<HTMLDivElement>(null);
+  const [containerAR, setContainerAR] = useState(1.35);
+  useEffect(() => {
+    const el = mapRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      if (height > 0) setContainerAR(width / height);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const continentViews = useMemo(() => computeViews(containerAR), [containerAR]);
+
   const recommendations = useMemo(() => {
     if (n8nRoutes && n8nRoutes.length >= 4) {
       const seen = new Set<string>();
@@ -213,13 +226,14 @@ function InspirationMap() {
   const displayBubbles = useMemo(() => {
     if (activeContinent !== "全部") {
       const pool = allDestinations.filter((b) => b.continent === activeContinent);
-      return pickBubbles(pool, Math.min(pool.length, 7), 5);
+      const dist = pool.length <= 4 ? 4 : 7;
+      return pickBubbles(pool, Math.min(pool.length, 5), dist);
     }
-    return pickBubbles(allDestinations, 6);
+    return pickBubbles(allDestinations, 6, 16);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeContinent]);
 
-  const view = continentView[activeContinent] ?? continentView["全部"];
+  const view = continentViews[activeContinent] ?? continentViews["全部"];
 
   return (
     <div className="app-shell min-h-screen bg-[#f5f6fa] pb-20">
@@ -248,7 +262,7 @@ function InspirationMap() {
       </header>
 
       {/* ═══ Map Area ═══ */}
-      <section className="relative mx-3 mt-2 overflow-hidden rounded-[20px] bg-[#c8e1f0] shadow-md" style={{ height: 260 }}>
+      <section ref={mapRef} className="relative mx-3 mt-2 overflow-hidden rounded-[20px] bg-[#c8e1f0] shadow-md" style={{ height: 260 }}>
         {/* Oversized canvas: SVG + bubbles move together */}
         <div
           className="absolute"
@@ -283,7 +297,7 @@ function InspirationMap() {
           {displayBubbles.map((bubble, idx) => {
             const isLg = bubble.size === "lg";
             const isMd = bubble.size === "md";
-            const basePx = isLg ? 64 : isMd ? 50 : 40;
+            const basePx = isLg ? 54 : isMd ? 44 : 36;
             const px = basePx / view.scale;
             const floatDuration = 3 + idx * 0.4;
             const floatDelay = idx * 0.6;
