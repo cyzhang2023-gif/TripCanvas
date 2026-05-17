@@ -34,21 +34,21 @@ type MapBubble = {
 };
 
 const allDestinations: MapBubble[] = [
-  { name: "冰岛极光", sub: "奇幻之旅", query: "iceland northern lights aurora", top: 8, left: 44, size: "md", continent: "欧洲" },
-  { name: "圣托里尼", sub: "蓝白梦幻", query: "santorini greece blue dome sunset", top: 32, left: 56, size: "sm", continent: "欧洲" },
-  { name: "瑞士雪山", sub: "阿尔卑斯", query: "swiss alps matterhorn snow", top: 20, left: 51, size: "sm", continent: "欧洲" },
-  { name: "挪威峡湾", sub: "壮美北欧", query: "norway fjord scenic landscape", top: 12, left: 52, size: "sm", continent: "欧洲" },
-  { name: "肯尼亚", sub: "动物迁徙", query: "kenya safari animal migration", top: 55, left: 58, size: "md", continent: "非洲" },
-  { name: "摩洛哥沙漠", sub: "撒哈拉之旅", query: "morocco sahara desert camel", top: 37, left: 47, size: "sm", continent: "非洲" },
-  { name: "马尔代夫", sub: "水上天堂", query: "maldives overwater villa ocean", top: 52, left: 70, size: "md", continent: "亚洲" },
-  { name: "北海道", sub: "春日赏樱", query: "hokkaido cherry blossom japan spring", top: 22, left: 88, size: "md", continent: "亚洲" },
-  { name: "菲律宾科隆", sub: "潜水天堂", query: "coron palawan island diving lagoon", top: 48, left: 83, size: "lg", continent: "亚洲" },
-  { name: "巴厘岛", sub: "神庙与稻田", query: "bali rice terrace temple indonesia", top: 62, left: 80, size: "sm", continent: "亚洲" },
-  { name: "纽约", sub: "不夜之城", query: "new york manhattan skyline night", top: 28, left: 28, size: "sm", continent: "北美洲" },
-  { name: "夏威夷", sub: "阳光海浪", query: "hawaii waikiki beach sunset", top: 40, left: 10, size: "sm", continent: "北美洲" },
-  { name: "秘鲁", sub: "失落文明", query: "machu picchu peru inca ruins", top: 66, left: 28, size: "sm", continent: "南美洲" },
-  { name: "巴塔哥尼亚", sub: "世界尽头", query: "patagonia glacier argentina", top: 84, left: 32, size: "sm", continent: "南美洲" },
-  { name: "澳大利亚", sub: "大堡礁", query: "great barrier reef australia coral", top: 72, left: 78, size: "sm", continent: "大洋洲" },
+  { name: "冰岛极光", sub: "奇幻之旅", query: "iceland northern lights aurora", top: 14, left: 44, size: "md", continent: "欧洲" },
+  { name: "圣托里尼", sub: "蓝白梦幻", query: "santorini greece blue dome sunset", top: 34, left: 56, size: "sm", continent: "欧洲" },
+  { name: "瑞士雪山", sub: "阿尔卑斯", query: "swiss alps matterhorn snow", top: 22, left: 51, size: "sm", continent: "欧洲" },
+  { name: "挪威峡湾", sub: "壮美北欧", query: "norway fjord scenic landscape", top: 15, left: 53, size: "sm", continent: "欧洲" },
+  { name: "肯尼亚", sub: "动物迁徙", query: "kenya safari animal migration", top: 52, left: 56, size: "md", continent: "非洲" },
+  { name: "摩洛哥沙漠", sub: "撒哈拉之旅", query: "morocco sahara desert camel", top: 38, left: 47, size: "sm", continent: "非洲" },
+  { name: "马尔代夫", sub: "水上天堂", query: "maldives overwater villa ocean", top: 50, left: 68, size: "md", continent: "亚洲" },
+  { name: "北海道", sub: "春日赏樱", query: "hokkaido cherry blossom japan spring", top: 24, left: 84, size: "md", continent: "亚洲" },
+  { name: "菲律宾科隆", sub: "潜水天堂", query: "coron palawan island diving lagoon", top: 48, left: 78, size: "lg", continent: "亚洲" },
+  { name: "巴厘岛", sub: "神庙与稻田", query: "bali rice terrace temple indonesia", top: 60, left: 76, size: "sm", continent: "亚洲" },
+  { name: "纽约", sub: "不夜之城", query: "new york manhattan skyline night", top: 30, left: 28, size: "sm", continent: "北美洲" },
+  { name: "夏威夷", sub: "阳光海浪", query: "hawaii waikiki beach sunset", top: 42, left: 14, size: "sm", continent: "北美洲" },
+  { name: "秘鲁", sub: "失落文明", query: "machu picchu peru inca ruins", top: 62, left: 28, size: "sm", continent: "南美洲" },
+  { name: "巴塔哥尼亚", sub: "世界尽头", query: "patagonia glacier argentina", top: 78, left: 32, size: "sm", continent: "南美洲" },
+  { name: "澳大利亚", sub: "大堡礁", query: "great barrier reef australia coral", top: 68, left: 76, size: "sm", continent: "大洋洲" },
 ];
 
 function pickBubbles(pool: MapBubble[], count: number): MapBubble[] {
@@ -179,76 +179,16 @@ function InspirationMap() {
 
       {/* ═══ Map Area — with controls matching mockup ═══ */}
       <section className="relative mx-3 mt-2 overflow-hidden rounded-[20px] shadow-md" style={{ height: 340 }}>
-        {/* World map background */}
-        <div className="absolute inset-0 bg-[#e9f1f7]">
-          <svg viewBox="0 0 1000 500" className="h-full w-full" preserveAspectRatio="xMidYMid slice">
-            <defs>
-              <radialGradient id="ocean" cx="50%" cy="50%" r="70%">
-                <stop offset="0%" stopColor="#e9f3fa" />
-                <stop offset="100%" stopColor="#d5e6f2" />
-              </radialGradient>
-            </defs>
-            <rect width="1000" height="500" fill="url(#ocean)" />
-            {/* Grid lines */}
-            <g stroke="#c2d8e8" strokeWidth="0.4" fill="none" opacity="0.4" strokeDasharray="6 4">
-              <line x1="0" y1="125" x2="1000" y2="125" />
-              <line x1="0" y1="250" x2="1000" y2="250" />
-              <line x1="0" y1="375" x2="1000" y2="375" />
-              <line x1="250" y1="0" x2="250" y2="500" />
-              <line x1="500" y1="0" x2="500" y2="500" />
-              <line x1="750" y1="0" x2="750" y2="500" />
-            </g>
-            {/* Continents — equirectangular projection */}
-            <g fill="#b6ced9" stroke="#96b5c6" strokeWidth="0.6" strokeLinejoin="round">
-              {/* North America */}
-              <path d="M45,75 L70,62 L115,58 L160,48 L210,45 L255,52 L290,58 L330,92 L318,112 L305,130 L290,148 L275,178 L255,168 L235,178 L218,192 L228,212 L215,218 L195,200 L178,165 L160,130 L152,112 L130,92 L85,78 Z" />
-              {/* Greenland */}
-              <path d="M340,32 L375,25 L400,35 L395,56 L368,60 L342,50 Z" />
-              {/* Central America */}
-              <path d="M215,218 L228,212 L240,222 L248,232 L238,238 L225,232 Z" />
-              {/* South America */}
-              <path d="M238,238 L265,228 L305,225 L350,232 L385,248 L402,268 L398,298 L382,322 L358,348 L328,368 L318,398 L308,380 L312,348 L298,315 L282,282 L278,255 L258,240 Z" />
-              {/* Iceland */}
-              <path d="M412,50 L428,46 L438,52 L432,60 L418,58 Z" />
-              {/* UK + Ireland */}
-              <path d="M448,88 L458,78 L465,85 L462,98 L452,100 Z" />
-              <path d="M442,90 L448,84 L450,92 L444,96 Z" />
-              {/* Europe */}
-              <path d="M465,85 L478,72 L498,74 L518,82 L538,75 L558,68 L572,72 L568,88 L558,98 L548,108 L540,118 L530,128 L548,135 L562,142 L555,150 L540,142 L525,128 L510,118 L500,108 L492,118 L478,125 L468,120 L460,108 L465,95 Z" />
-              {/* Scandinavia */}
-              <path d="M478,42 L492,38 L502,45 L508,58 L498,74 L488,68 L478,55 Z" />
-              {/* Africa */}
-              <path d="M455,172 L478,165 L510,168 L535,178 L548,198 L555,225 L552,258 L542,295 L525,328 L505,352 L480,358 L462,345 L448,310 L440,268 L438,228 L445,195 Z" />
-              {/* Madagascar */}
-              <path d="M568,310 L575,298 L580,312 L575,325 L568,318 Z" />
-              {/* Arabian Peninsula */}
-              <path d="M558,168 L580,158 L598,172 L595,192 L582,198 L565,188 Z" />
-              {/* India */}
-              <path d="M628,130 L648,125 L662,142 L668,168 L658,198 L642,215 L628,205 L622,178 L618,155 Z" />
-              {/* Sri Lanka */}
-              <path d="M648,218 L655,212 L658,222 L652,226 Z" />
-              {/* Asia (mainland) */}
-              <path d="M572,72 L598,55 L640,48 L685,42 L720,48 L755,58 L780,72 L790,92 L785,115 L772,130 L755,138 L735,142 L715,135 L695,125 L675,118 L662,125 L648,125 L628,130 L618,120 L600,108 L585,95 L572,82 Z" />
-              {/* Southeast Asia mainland */}
-              <path d="M695,155 L710,148 L725,158 L735,175 L728,195 L715,205 L700,195 L695,175 Z" />
-              {/* Indonesia — Sumatra, Java, Borneo */}
-              <path d="M700,232 L718,225 L728,235 L720,245 L705,240 Z" />
-              <path d="M725,248 L745,242 L755,250 L742,258 L728,255 Z" />
-              <path d="M728,218 L748,212 L758,225 L748,235 L732,228 Z" />
-              {/* Philippines */}
-              <path d="M762,178 L770,168 L778,178 L775,192 L768,195 Z" />
-              {/* Japan */}
-              <path d="M798,88 L808,78 L815,88 L812,108 L802,112 L795,102 Z" />
-              {/* Taiwan */}
-              <path d="M778,148 L784,142 L788,150 L783,156 Z" />
-              {/* Australia */}
-              <path d="M762,318 L808,305 L848,312 L872,332 L868,362 L842,385 L802,382 L772,365 L758,342 Z" />
-              {/* New Zealand */}
-              <path d="M882,378 L888,368 L895,378 L892,392 L885,395 Z" />
-            </g>
-          </svg>
+        {/* World map background — generated from Natural Earth data */}
+        <div className="absolute inset-0 bg-[#dce8f0]">
+          <img
+            src="/world-map.svg"
+            alt=""
+            className="h-full w-full object-cover"
+            draggable={false}
+          />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-white/20" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-white/15" />
 
         {/* Top-left: region dropdown */}
         <div className="absolute left-3 top-3 z-10">
