@@ -59,10 +59,9 @@ const AI_STEPS = ["读取攻略来源", "AI 智能解析", "地理编码定位",
 
 /* ─── Xiaohongshu (小红书) content extraction ─── */
 const XHS_URL_RE = /(?:xiaohongshu\.com|xhslink\.com)\//;
+const XHS_NOTE_URL_RE = /https?:\/\/(?:www\.)?(?:xiaohongshu\.com\/(?:explore|discovery\/item)\/[a-zA-Z0-9]+|xhslink\.com\/[^\s]+)/;
 
 function extractXhsShareText(raw: string): string | null {
-  // XHS app share format: "标题文字 描述... https://www.xiaohongshu.com/..."
-  // or: "29 赞同了该笔记 标题... http://xhslink.com/..."
   const urlIdx = raw.search(/https?:\/\/(?:www\.)?(?:xiaohongshu\.com|xhslink\.com)\//);
   if (urlIdx <= 0) return null;
   const textBefore = raw.slice(0, urlIdx).trim()
@@ -71,6 +70,99 @@ function extractXhsShareText(raw: string): string | null {
     .replace(/\s*发布了一篇小红书笔记[，。！]?\s*$/, "")
     .trim();
   return textBefore.length >= 5 ? textBefore : null;
+}
+
+function extractXhsUrl(raw: string): string | null {
+  const m = raw.match(XHS_NOTE_URL_RE);
+  return m ? m[0] : null;
+}
+
+function extractXhsNoteId(noteUrl: string): string | null {
+  const m = noteUrl.match(/xiaohongshu\.com\/(?:explore|discovery\/item)\/([a-zA-Z0-9]+)/);
+  return m ? m[1] : null;
+}
+
+async function resolveXhsShortLink(shortUrl: string): Promise<string | null> {
+  try {
+    const resp = await fetch(shortUrl, { redirect: "manual" });
+    const location = resp.headers.get("location");
+    if (location) {
+      const id = extractXhsNoteId(location);
+      if (id) return id;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchXhsViaTikHub(noteUrl: string): Promise<string | null> {
+  const apiKey = process.env.TIKHUB_API_KEY;
+  if (!apiKey) {
+    console.log("[XHS] No TIKHUB_API_KEY configured, skipping TikHub fetch");
+    return null;
+  }
+
+  try {
+    let noteId = extractXhsNoteId(noteUrl);
+    if (!noteId && noteUrl.includes("xhslink.com")) {
+      noteId = await resolveXhsShortLink(noteUrl);
+    }
+    if (!noteId) {
+      console.log(`[XHS] Could not extract note ID from: ${noteUrl}`);
+      return null;
+    }
+
+    console.log(`[XHS] Fetching via TikHub API, note ID: ${noteId}`);
+    const resp = await fetch(
+      `https://api.tikhub.io/api/v1/xiaohongshu/web/get_note_by_id?note_id=${noteId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        signal: AbortSignal.timeout(15_000),
+      },
+    );
+
+    if (!resp.ok) {
+      console.log(`[XHS] TikHub API returned ${resp.status}`);
+      return null;
+    }
+
+    const json = await resp.json() as any;
+    const noteData = json?.data?.note_item?.note_card
+      ?? json?.data?.note_card
+      ?? json?.data?.items?.[0]?.note_card
+      ?? json?.data;
+
+    if (!noteData) {
+      console.log("[XHS] TikHub returned no note data");
+      return null;
+    }
+
+    const title = noteData.title || noteData.display_title || "";
+    const desc = noteData.desc || noteData.note_desc || "";
+    const tags = (noteData.tag_list || noteData.tags || [])
+      .map((t: any) => t?.name || t)
+      .filter(Boolean);
+
+    const parts = [
+      title && `标题: ${title}`,
+      desc && `内容: ${desc}`,
+      tags.length && `标签: ${tags.join(", ")}`,
+    ].filter(Boolean);
+    const result = parts.join("\n\n");
+
+    if (result.length > 20) {
+      console.log(`[XHS] TikHub extracted: "${title}" (${desc.length} chars)`);
+      return result;
+    }
+    return null;
+  } catch (err) {
+    console.error(`[XHS] TikHub fetch failed:`, (err as Error).message);
+    return null;
+  }
 }
 
 function makeJobResponse(job: ImportJobState) {
@@ -110,19 +202,28 @@ function updateJobProgress(
 /** Process import job asynchronously with real AI */
 async function processImportJob(job: ImportJobState, env: unknown, ownerId: string) {
   try {
-    // Step 1: Reading source — extract share text if XHS
+    // Step 1: Reading source — fetch XHS content if applicable
     updateJobProgress(job, 0, 10);
     let aiContent = job.content;
     let aiKind = job.kind;
 
     if (XHS_URL_RE.test(job.content)) {
-      const shareText = extractXhsShareText(job.content);
-      if (shareText) {
-        console.log(`[Import] Extracted XHS share text: "${shareText.slice(0, 60)}..."`);
-        aiContent = `来源: 小红书笔记分享\n\n${shareText}`;
-        aiKind = "text";
-      } else {
-        console.log(`[Import] Bare XHS URL with no share text, passing to AI as-is`);
+      const noteUrl = extractXhsUrl(job.content);
+      if (noteUrl) {
+        const fetched = await fetchXhsViaTikHub(noteUrl);
+        if (fetched) {
+          aiContent = `来源: 小红书笔记\n\n${fetched}`;
+          aiKind = "text";
+        }
+      }
+      // Fallback to share text if Playwright didn't work
+      if (aiContent === job.content) {
+        const shareText = extractXhsShareText(job.content);
+        if (shareText) {
+          console.log(`[Import] Fallback to XHS share text: "${shareText.slice(0, 60)}..."`);
+          aiContent = `来源: 小红书笔记分享\n\n${shareText}`;
+          aiKind = "text";
+        }
       }
     }
 
