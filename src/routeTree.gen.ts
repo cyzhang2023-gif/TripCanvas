@@ -14,6 +14,7 @@ import { Route as ShareRouteImport } from './routes/share'
 import { Route as QuizRouteImport } from './routes/quiz'
 import { Route as ParsingRouteImport } from './routes/parsing'
 import { Route as MyTripsRouteImport } from './routes/my-trips'
+import { Route as InspirationRouteImport } from './routes/inspiration'
 import { Route as ImportRouteImport } from './routes/import'
 import { Route as ExploreRouteImport } from './routes/explore'
 import { Route as DestinationsRouteImport } from './routes/destinations'
@@ -44,6 +45,11 @@ const MyTripsRoute = MyTripsRouteImport.update({
   path: '/my-trips',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InspirationRoute = InspirationRouteImport.update({
+  id: '/inspiration',
+  path: '/inspiration',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ImportRoute = ImportRouteImport.update({
   id: '/import',
   path: '/import',
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/destinations': typeof DestinationsRoute
   '/explore': typeof ExploreRoute
   '/import': typeof ImportRoute
+  '/inspiration': typeof InspirationRoute
   '/my-trips': typeof MyTripsRoute
   '/parsing': typeof ParsingRoute
   '/quiz': typeof QuizRoute
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/destinations': typeof DestinationsRoute
   '/explore': typeof ExploreRoute
   '/import': typeof ImportRoute
+  '/inspiration': typeof InspirationRoute
   '/my-trips': typeof MyTripsRoute
   '/parsing': typeof ParsingRoute
   '/quiz': typeof QuizRoute
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/destinations': typeof DestinationsRoute
   '/explore': typeof ExploreRoute
   '/import': typeof ImportRoute
+  '/inspiration': typeof InspirationRoute
   '/my-trips': typeof MyTripsRoute
   '/parsing': typeof ParsingRoute
   '/quiz': typeof QuizRoute
@@ -106,6 +115,7 @@ export interface FileRouteTypes {
     | '/destinations'
     | '/explore'
     | '/import'
+    | '/inspiration'
     | '/my-trips'
     | '/parsing'
     | '/quiz'
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/destinations'
     | '/explore'
     | '/import'
+    | '/inspiration'
     | '/my-trips'
     | '/parsing'
     | '/quiz'
@@ -128,6 +139,7 @@ export interface FileRouteTypes {
     | '/destinations'
     | '/explore'
     | '/import'
+    | '/inspiration'
     | '/my-trips'
     | '/parsing'
     | '/quiz'
@@ -140,6 +152,7 @@ export interface RootRouteChildren {
   DestinationsRoute: typeof DestinationsRoute
   ExploreRoute: typeof ExploreRoute
   ImportRoute: typeof ImportRoute
+  InspirationRoute: typeof InspirationRoute
   MyTripsRoute: typeof MyTripsRoute
   ParsingRoute: typeof ParsingRoute
   QuizRoute: typeof QuizRoute
@@ -184,6 +197,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MyTripsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/inspiration': {
+      id: '/inspiration'
+      path: '/inspiration'
+      fullPath: '/inspiration'
+      preLoaderRoute: typeof InspirationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/import': {
       id: '/import'
       path: '/import'
@@ -220,6 +240,7 @@ const rootRouteChildren: RootRouteChildren = {
   DestinationsRoute: DestinationsRoute,
   ExploreRoute: ExploreRoute,
   ImportRoute: ImportRoute,
+  InspirationRoute: InspirationRoute,
   MyTripsRoute: MyTripsRoute,
   ParsingRoute: ParsingRoute,
   QuizRoute: QuizRoute,

@@ -27,6 +27,7 @@ type MapBubble = {
   name: string;
   sub: string;
   query: string;
+  dest: string;
   top: number;
   left: number;
   size: "lg" | "md" | "sm";
@@ -34,21 +35,21 @@ type MapBubble = {
 };
 
 const allDestinations: MapBubble[] = [
-  { name: "冰岛极光", sub: "奇幻之旅", query: "iceland northern lights aurora", top: 14, left: 44, size: "md", continent: "欧洲" },
-  { name: "圣托里尼", sub: "蓝白梦幻", query: "santorini greece blue dome sunset", top: 34, left: 56, size: "sm", continent: "欧洲" },
-  { name: "瑞士雪山", sub: "阿尔卑斯", query: "swiss alps matterhorn snow", top: 22, left: 51, size: "sm", continent: "欧洲" },
-  { name: "挪威峡湾", sub: "壮美北欧", query: "norway fjord scenic landscape", top: 15, left: 53, size: "sm", continent: "欧洲" },
-  { name: "肯尼亚", sub: "动物迁徙", query: "kenya safari animal migration", top: 52, left: 56, size: "md", continent: "非洲" },
-  { name: "摩洛哥沙漠", sub: "撒哈拉之旅", query: "morocco sahara desert camel", top: 38, left: 47, size: "sm", continent: "非洲" },
-  { name: "马尔代夫", sub: "水上天堂", query: "maldives overwater villa ocean", top: 50, left: 68, size: "md", continent: "亚洲" },
-  { name: "北海道", sub: "春日赏樱", query: "hokkaido cherry blossom japan spring", top: 24, left: 84, size: "md", continent: "亚洲" },
-  { name: "菲律宾科隆", sub: "潜水天堂", query: "coron palawan island diving lagoon", top: 48, left: 78, size: "lg", continent: "亚洲" },
-  { name: "巴厘岛", sub: "神庙与稻田", query: "bali rice terrace temple indonesia", top: 60, left: 76, size: "sm", continent: "亚洲" },
-  { name: "纽约", sub: "不夜之城", query: "new york manhattan skyline night", top: 30, left: 28, size: "sm", continent: "北美洲" },
-  { name: "夏威夷", sub: "阳光海浪", query: "hawaii waikiki beach sunset", top: 42, left: 14, size: "sm", continent: "北美洲" },
-  { name: "秘鲁", sub: "失落文明", query: "machu picchu peru inca ruins", top: 62, left: 28, size: "sm", continent: "南美洲" },
-  { name: "巴塔哥尼亚", sub: "世界尽头", query: "patagonia glacier argentina", top: 78, left: 32, size: "sm", continent: "南美洲" },
-  { name: "澳大利亚", sub: "大堡礁", query: "great barrier reef australia coral", top: 68, left: 76, size: "sm", continent: "大洋洲" },
+  { name: "冰岛极光", sub: "奇幻之旅", query: "iceland northern lights aurora", dest: "冰岛", top: 14, left: 44, size: "md", continent: "欧洲" },
+  { name: "圣托里尼", sub: "蓝白梦幻", query: "santorini greece blue dome sunset", dest: "圣托里尼", top: 34, left: 56, size: "sm", continent: "欧洲" },
+  { name: "瑞士雪山", sub: "阿尔卑斯", query: "swiss alps matterhorn snow", dest: "瑞士", top: 22, left: 51, size: "sm", continent: "欧洲" },
+  { name: "挪威峡湾", sub: "壮美北欧", query: "norway fjord scenic landscape", dest: "挪威", top: 15, left: 53, size: "sm", continent: "欧洲" },
+  { name: "肯尼亚", sub: "动物迁徙", query: "kenya safari animal migration", dest: "肯尼亚", top: 52, left: 56, size: "md", continent: "非洲" },
+  { name: "摩洛哥沙漠", sub: "撒哈拉之旅", query: "morocco sahara desert camel", dest: "摩洛哥", top: 38, left: 47, size: "sm", continent: "非洲" },
+  { name: "马尔代夫", sub: "水上天堂", query: "maldives overwater villa ocean", dest: "马尔代夫", top: 50, left: 68, size: "md", continent: "亚洲" },
+  { name: "北海道", sub: "春日赏樱", query: "hokkaido cherry blossom japan spring", dest: "北海道", top: 24, left: 84, size: "md", continent: "亚洲" },
+  { name: "菲律宾科隆", sub: "潜水天堂", query: "coron palawan island diving lagoon", dest: "科隆岛", top: 48, left: 78, size: "lg", continent: "亚洲" },
+  { name: "巴厘岛", sub: "神庙与稻田", query: "bali rice terrace temple indonesia", dest: "巴厘岛", top: 60, left: 76, size: "sm", continent: "亚洲" },
+  { name: "纽约", sub: "不夜之城", query: "new york manhattan skyline night", dest: "纽约", top: 30, left: 28, size: "sm", continent: "北美洲" },
+  { name: "夏威夷", sub: "阳光海浪", query: "hawaii waikiki beach sunset", dest: "夏威夷", top: 42, left: 14, size: "sm", continent: "北美洲" },
+  { name: "秘鲁", sub: "失落文明", query: "machu picchu peru inca ruins", dest: "秘鲁", top: 62, left: 28, size: "sm", continent: "南美洲" },
+  { name: "巴塔哥尼亚", sub: "世界尽头", query: "patagonia glacier argentina", dest: "巴塔哥尼亚", top: 78, left: 32, size: "sm", continent: "南美洲" },
+  { name: "澳大利亚", sub: "大堡礁", query: "great barrier reef australia coral", dest: "澳大利亚", top: 68, left: 76, size: "sm", continent: "大洋洲" },
 ];
 
 function pickBubbles(pool: MapBubble[], count: number): MapBubble[] {
@@ -245,7 +246,7 @@ function InspirationMap() {
             <Link
               key={bubble.name}
               to="/explore"
-              search={{ dest: bubble.query.split(" ")[0] }}
+              search={{ dest: bubble.dest }}
               className="absolute z-[6] flex flex-col items-center active:scale-90"
               style={{
                 top: `${bubble.top}%`,
