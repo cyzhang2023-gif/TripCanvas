@@ -90,7 +90,7 @@ const allDestinations: MapBubble[] = [
 const MAP_CANVAS_W = 260; // % of container width
 
 type ViewState = { scale: number; left: number; top: number };
-const CANVAS_H = MAP_CANVAS_W * 383 / 1000; // canvas height as % of container WIDTH
+const CANVAS_H = MAP_CANVAS_W * 550 / 1000; // canvas height as % of container WIDTH
 const S0 = 100 / MAP_CANVAS_W; // 0.385 — fits full map width
 const S1 = 0.82; // zoomed-in scale
 
@@ -268,7 +268,7 @@ function InspirationMap() {
           className="absolute"
           style={{
             width: `${MAP_CANVAS_W}%`,
-            aspectRatio: "1000 / 383",
+            aspectRatio: "1000 / 550",
             left: `${view.left}%`,
             top: `${view.top}%`,
             transform: `scale(${view.scale})`,
@@ -276,7 +276,7 @@ function InspirationMap() {
             transition: "left 0.6s cubic-bezier(0.4,0,0.2,1), top 0.6s cubic-bezier(0.4,0,0.2,1), transform 0.6s cubic-bezier(0.4,0,0.2,1)",
           }}
         >
-          <img src="/world-map.svg?v=3" alt="" className="absolute inset-0 h-full w-full" draggable={false} />
+          <img src="/world-map.svg?v=4" alt="" className="absolute inset-0 h-full w-full" draggable={false} />
 
           {/* Bubbles positioned as % of SVG coordinate space */}
           <style>{`

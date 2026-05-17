@@ -12,8 +12,7 @@ const countries = feature(topo, topo.objects.countries);
 const W = 1000;
 const LAT_TOP = 78, LAT_BOT = -60;
 const LAT_RANGE = LAT_TOP - LAT_BOT; // 138°
-// Correct equirectangular proportion: height = latRange/360 * W * 2
-const H = Math.round((LAT_RANGE / 180) * (W / 2)); // 383
+const H = 550; // ~1.82:1 ratio — taller than true equirectangular for a natural map look
 
 function project(lng, lat) {
   const x = ((lng + 180) / 360) * W;
