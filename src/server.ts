@@ -1094,7 +1094,7 @@ async function handleApiRequest(request: Request, env: unknown): Promise<Respons
           LEFT JOIN itinerary_days d ON d.route_id = r.id
           LEFT JOIN itinerary_places ip ON ip.day_id = d.id
           WHERE r.status = 'published'
-            ${dest ? "AND r.destination = $1" : ""}
+            ${dest ? "AND (r.destination = $1 OR r.city = $1 OR r.country = $1)" : ""}
           GROUP BY r.id
           ORDER BY r.quality_score DESC, r.created_at DESC
           LIMIT ${dest ? "20" : "60"}
