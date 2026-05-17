@@ -177,7 +177,7 @@ function Index() {
         <div className="absolute inset-x-4 bottom-3 z-10">
           <div className="flex items-center gap-1.5 rounded-full bg-white shadow-lg pl-3 pr-1 py-[3px]">
             <Search className="h-3.5 w-3.5 text-gray-400 shrink-0" />
-            <input placeholder="想去哪儿? 搜索目的地 / 景点 / 攻略"
+            <input placeholder="想去哪儿? 粘贴小红书链接 / 搜索目的地"
               className="flex-1 bg-transparent text-[11px] py-1.5 outline-none placeholder:text-gray-400 min-w-0"
               value={content} onChange={(e) => setContent(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") submitHero(); }} />
@@ -187,12 +187,22 @@ function Index() {
               {submitting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
             </button>
           </div>
-          <div className="mt-1.5 flex gap-1.5 overflow-x-auto no-scrollbar">
-            {heroTags.map(t => (
-              <button key={t} type="button" onClick={() => setContent(t)}
-                className="shrink-0 rounded-full bg-white/20 backdrop-blur text-white text-[9px] px-2 py-[3px] font-medium">{t}</button>
-            ))}
-          </div>
+          {content && /xiaohongshu\.com|xhslink\.com/.test(content) ? (
+            <div className="mt-1.5 flex items-center gap-1.5">
+              <span className="shrink-0 rounded-full bg-emerald-500/90 backdrop-blur text-white text-[9px] px-2.5 py-[3px] font-medium flex items-center gap-1">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                小红书笔记已识别
+              </span>
+              <span className="text-[9px] text-white/80">点击按钮解析为旅行路线</span>
+            </div>
+          ) : (
+            <div className="mt-1.5 flex gap-1.5 overflow-x-auto no-scrollbar">
+              {heroTags.map(t => (
+                <button key={t} type="button" onClick={() => setContent(t)}
+                  className="shrink-0 rounded-full bg-white/20 backdrop-blur text-white text-[9px] px-2 py-[3px] font-medium">{t}</button>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

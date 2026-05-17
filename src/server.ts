@@ -57,6 +57,22 @@ const quizAiJobs = new TTLCache<string, QuizAiJobState>({ maxSize: 100, ttlMs: 1
 
 const AI_STEPS = ["读取攻略来源", "AI 智能解析", "地理编码定位", "优化路线排序"];
 
+/* ─── Xiaohongshu (小红书) content extraction ─── */
+const XHS_URL_RE = /(?:xiaohongshu\.com|xhslink\.com)\//;
+
+function extractXhsShareText(raw: string): string | null {
+  // XHS app share format: "标题文字 描述... https://www.xiaohongshu.com/..."
+  // or: "29 赞同了该笔记 标题... http://xhslink.com/..."
+  const urlIdx = raw.search(/https?:\/\/(?:www\.)?(?:xiaohongshu\.com|xhslink\.com)\//);
+  if (urlIdx <= 0) return null;
+  const textBefore = raw.slice(0, urlIdx).trim()
+    .replace(/^\d+\s*赞同了该笔记\s*/, "")
+    .replace(/，分享给你[，。！]?\s*$/, "")
+    .replace(/\s*发布了一篇小红书笔记[，。！]?\s*$/, "")
+    .trim();
+  return textBefore.length >= 5 ? textBefore : null;
+}
+
 function makeJobResponse(job: ImportJobState) {
   return {
     id: job.id,
@@ -94,12 +110,25 @@ function updateJobProgress(
 /** Process import job asynchronously with real AI */
 async function processImportJob(job: ImportJobState, env: unknown, ownerId: string) {
   try {
-    // Step 1: Reading source
+    // Step 1: Reading source — extract share text if XHS
     updateJobProgress(job, 0, 10);
+    let aiContent = job.content;
+    let aiKind = job.kind;
+
+    if (XHS_URL_RE.test(job.content)) {
+      const shareText = extractXhsShareText(job.content);
+      if (shareText) {
+        console.log(`[Import] Extracted XHS share text: "${shareText.slice(0, 60)}..."`);
+        aiContent = `来源: 小红书笔记分享\n\n${shareText}`;
+        aiKind = "text";
+      } else {
+        console.log(`[Import] Bare XHS URL with no share text, passing to AI as-is`);
+      }
+    }
 
     // Step 2: AI parsing
     updateJobProgress(job, 1, 30);
-    const trip = await parseWithAI(job.kind, job.content);
+    const trip = await parseWithAI(aiKind, aiContent);
 
     // Step 3: Geocoding (already done inside parseWithAI)
     updateJobProgress(job, 2, 70);
