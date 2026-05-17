@@ -22,24 +22,34 @@ export const Route = createFileRoute("/inspiration")({
   head: () => ({ meta: [{ title: "灵感地图 · Routey" }] }),
 });
 
-/* ─── Map bubble data ─── */
+/* ─── Map bubble data with real geographic coordinates ─── */
 type MapBubble = {
   name: string;
   sub: string;
   query: string;
-  top: string;
-  left: string;
+  lat: number;
+  lng: number;
   size: "lg" | "md" | "sm";
   continent: string;
 };
 
+function geoToPercent(lat: number, lng: number): { top: string; left: string } {
+  const left = ((lng + 180) / 360) * 100;
+  const latRad = (lat * Math.PI) / 180;
+  const mercN = Math.log(Math.tan(Math.PI / 4 + latRad / 2));
+  const yNorm = 0.5 - mercN / (2 * Math.PI);
+  const top = Math.max(2, Math.min(92, yNorm * 100));
+  return { top: `${top}%`, left: `${left}%` };
+}
+
 const mapBubbles: MapBubble[] = [
-  { name: "日本赏樱", sub: "春日限定", query: "日本樱花 富士山", top: "22%", left: "15%", size: "md", continent: "亚洲" },
-  { name: "欧洲小镇", sub: "浪漫与历史", query: "欧洲小镇 布拉格", top: "12%", left: "42%", size: "md", continent: "欧洲" },
-  { name: "冰岛极光", sub: "奇幻之旅", query: "冰岛极光 aurora", top: "14%", left: "76%", size: "sm", continent: "欧洲" },
-  { name: "大阪·潮流街区", sub: "活力与美食", query: "大阪道顿堀", top: "46%", left: "44%", size: "lg", continent: "亚洲" },
-  { name: "东南亚海岛", sub: "碧海蓝天", query: "泰国普吉岛海滩", top: "66%", left: "20%", size: "md", continent: "亚洲" },
-  { name: "文化探索", sub: "千年文明", query: "柬埔寨吴哥窟", top: "58%", left: "74%", size: "sm", continent: "亚洲" },
+  { name: "冰岛极光", sub: "奇幻之旅", query: "iceland aurora borealis", lat: 64.9, lng: -18.5, size: "md", continent: "欧洲" },
+  { name: "菲律宾科隆岛", sub: "潜水天堂", query: "coron island palawan diving", lat: 12.0, lng: 120.2, size: "lg", continent: "亚洲" },
+  { name: "北海道赏樱", sub: "春日浪漫", query: "hokkaido cherry blossom", lat: 43.0, lng: 141.3, size: "md", continent: "亚洲" },
+  { name: "圣托里尼", sub: "蓝白梦幻", query: "santorini greece sunset", lat: 36.4, lng: 25.4, size: "sm", continent: "欧洲" },
+  { name: "马尔代夫", sub: "水上天堂", query: "maldives overwater villa", lat: 3.2, lng: 73.2, size: "md", continent: "亚洲" },
+  { name: "秘鲁马丘比丘", sub: "失落文明", query: "machu picchu peru", lat: -13.2, lng: -72.5, size: "sm", continent: "南美洲" },
+  { name: "纽约", sub: "不夜之城", query: "new york city skyline", lat: 40.7, lng: -74.0, size: "sm", continent: "北美洲" },
 ];
 
 const continents = ["全部", "亚洲", "欧洲", "北美洲", "南美洲", "非洲", "大洋洲"];
@@ -151,14 +161,45 @@ function InspirationMap() {
 
       {/* ═══ Map Area — with controls matching mockup ═══ */}
       <section className="relative mx-3 mt-2 overflow-hidden rounded-[20px] shadow-md" style={{ height: 340 }}>
-        {/* Map background */}
-        <img
-          src="/api/spot-image?q=world+map+watercolor+pastel+illustration"
-          alt="map bg"
-          className="absolute inset-0 h-full w-full object-cover"
-          style={{ filter: "brightness(1.06) saturate(0.85)" }}
-        />
-        <div className="absolute inset-0 bg-white/25" />
+        {/* Real world map background — Natural Earth style SVG */}
+        <div className="absolute inset-0 bg-[#e8f4f8]">
+          <svg viewBox="0 0 1000 500" className="h-full w-full" preserveAspectRatio="xMidYMid slice" style={{ opacity: 0.6 }}>
+            {/* Simplified world continents */}
+            <g fill="#b8d4e3" stroke="#9cc0d4" strokeWidth="0.5">
+              {/* North America */}
+              <path d="M120,80 L180,60 L230,80 L250,100 L260,140 L240,170 L210,200 L180,220 L160,250 L140,240 L120,200 L100,170 L90,130 L100,100 Z" />
+              <path d="M160,250 L180,260 L200,280 L190,300 L170,290 L150,270 Z" />
+              {/* South America */}
+              <path d="M200,300 L230,290 L260,310 L270,340 L280,370 L270,400 L250,430 L230,450 L210,440 L200,400 L190,360 L195,330 Z" />
+              {/* Europe */}
+              <path d="M440,80 L470,70 L500,75 L520,90 L510,110 L490,120 L470,130 L450,125 L440,110 Z" />
+              {/* Africa */}
+              <path d="M440,180 L480,170 L520,180 L540,210 L550,250 L540,300 L520,340 L490,360 L460,350 L440,310 L430,260 L435,220 Z" />
+              {/* Asia */}
+              <path d="M520,60 L580,50 L650,55 L720,70 L760,90 L780,120 L770,150 L740,160 L700,170 L650,180 L600,170 L560,150 L530,130 L520,100 Z" />
+              <path d="M650,180 L680,190 L700,210 L690,230 L670,220 L650,200 Z" />
+              {/* Southeast Asia islands */}
+              <path d="M720,220 L740,215 L755,225 L745,235 L725,230 Z" />
+              <path d="M750,240 L770,235 L785,245 L775,255 L755,250 Z" />
+              {/* Australia */}
+              <path d="M760,320 L810,310 L850,320 L870,340 L860,370 L830,390 L790,380 L760,360 L755,340 Z" />
+              {/* Japan */}
+              <path d="M790,100 L800,90 L810,100 L805,115 L795,110 Z" />
+              {/* Iceland */}
+              <path d="M410,52 L425,48 L435,54 L428,60 L415,58 Z" />
+            </g>
+            {/* Grid lines */}
+            <g stroke="#c8dce8" strokeWidth="0.3" fill="none" opacity="0.5">
+              <line x1="0" y1="250" x2="1000" y2="250" />
+              <line x1="500" y1="0" x2="500" y2="500" />
+              <line x1="0" y1="125" x2="1000" y2="125" />
+              <line x1="0" y1="375" x2="1000" y2="375" />
+              <line x1="250" y1="0" x2="250" y2="500" />
+              <line x1="750" y1="0" x2="750" y2="500" />
+            </g>
+          </svg>
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-white/30" />
 
         {/* Top-left: region dropdown */}
         <div className="absolute left-3 top-3 z-10">
@@ -188,16 +229,12 @@ function InspirationMap() {
           <MapPin className="h-4 w-4 text-primary" />
         </button>
 
-        {/* Center blue pin marker */}
-        <div className="absolute z-[5]" style={{ top: "58%", left: "44%", transform: "translate(-50%,-50%)" }}>
-          <MapPin className="h-5 w-5 text-primary drop-shadow-md" fill="currentColor" />
-        </div>
-
-        {/* Floating destination bubbles */}
+        {/* Floating destination bubbles at real geographic positions */}
         {filteredBubbles.map((bubble) => {
           const isLg = bubble.size === "lg";
           const isMd = bubble.size === "md";
           const px = isLg ? 72 : isMd ? 56 : 44;
+          const pos = geoToPercent(bubble.lat, bubble.lng);
 
           return (
             <Link
@@ -205,7 +242,7 @@ function InspirationMap() {
               to="/explore"
               search={{ dest: bubble.query.split(" ")[0] }}
               className="absolute z-[6] flex flex-col items-center transition-transform active:scale-90"
-              style={{ top: bubble.top, left: bubble.left, transform: "translate(-50%,-50%)" }}
+              style={{ top: pos.top, left: pos.left, transform: "translate(-50%,-50%)" }}
             >
               <div
                 className="overflow-hidden rounded-full shadow-lg"
