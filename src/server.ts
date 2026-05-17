@@ -115,7 +115,7 @@ async function fetchXhsViaTikHub(noteUrl: string): Promise<string | null> {
 
     console.log(`[XHS] Fetching via TikHub API, note ID: ${noteId}`);
     const resp = await fetch(
-      `https://api.tikhub.io/api/v1/xiaohongshu/web/v2/fetch_one_note?note_id=${noteId}`,
+      `https://api.tikhub.dev/api/v1/xiaohongshu/web_v2/fetch_one_note?note_id=${noteId}`,
       {
         headers: {
           Authorization: `Bearer ${apiKey}`,
