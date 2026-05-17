@@ -138,7 +138,7 @@ function Index() {
   const isXhsLink = /xiaohongshu\.com|xhslink\.com/.test(content);
   const submitHero = () => {
     if (!content.trim()) { nav({ to: "/quiz" }); return; }
-    if (isXhsLink) { setShowXhsDrawer(true); return; }
+    if (isXhsLink) { void doImport("text", content); return; }
     void doImport(inferKind(content), content);
   };
   const submitDrawer = () => {
