@@ -33,29 +33,63 @@ type MapBubble = {
 };
 
 const allDestinations: MapBubble[] = [
-  { name: "冰岛极光", sub: "奇幻之旅", query: "iceland northern lights aurora", dest: "冰岛", top: 14, left: 44, size: "md", continent: "欧洲" },
-  { name: "圣托里尼", sub: "蓝白梦幻", query: "santorini greece blue dome sunset", dest: "圣托里尼", top: 34, left: 56, size: "sm", continent: "欧洲" },
-  { name: "瑞士雪山", sub: "阿尔卑斯", query: "swiss alps matterhorn snow", dest: "瑞士", top: 22, left: 51, size: "sm", continent: "欧洲" },
-  { name: "挪威峡湾", sub: "壮美北欧", query: "norway fjord scenic landscape", dest: "挪威", top: 15, left: 53, size: "sm", continent: "欧洲" },
-  { name: "肯尼亚", sub: "动物迁徙", query: "kenya safari animal migration", dest: "肯尼亚", top: 52, left: 56, size: "md", continent: "非洲" },
-  { name: "摩洛哥沙漠", sub: "撒哈拉之旅", query: "morocco sahara desert camel", dest: "摩洛哥", top: 38, left: 47, size: "sm", continent: "非洲" },
-  { name: "马尔代夫", sub: "水上天堂", query: "maldives overwater villa ocean", dest: "马尔代夫", top: 50, left: 68, size: "md", continent: "亚洲" },
-  { name: "北海道", sub: "春日赏樱", query: "hokkaido cherry blossom japan spring", dest: "北海道", top: 24, left: 84, size: "md", continent: "亚洲" },
-  { name: "菲律宾科隆", sub: "潜水天堂", query: "coron palawan island diving lagoon", dest: "科隆岛", top: 48, left: 78, size: "lg", continent: "亚洲" },
-  { name: "巴厘岛", sub: "神庙与稻田", query: "bali rice terrace temple indonesia", dest: "巴厘岛", top: 60, left: 76, size: "sm", continent: "亚洲" },
-  { name: "纽约", sub: "不夜之城", query: "new york manhattan skyline night", dest: "纽约", top: 27, left: 29.5, size: "sm", continent: "北美洲" },
-  { name: "夏威夷", sub: "阳光海浪", query: "hawaii waikiki beach sunset", dest: "夏威夷", top: 42, left: 14, size: "sm", continent: "北美洲" },
-  { name: "秘鲁", sub: "失落文明", query: "machu picchu peru inca ruins", dest: "秘鲁", top: 62, left: 28, size: "sm", continent: "南美洲" },
-  { name: "巴塔哥尼亚", sub: "世界尽头", query: "patagonia glacier argentina", dest: "巴塔哥尼亚", top: 78, left: 32, size: "sm", continent: "南美洲" },
-  { name: "澳大利亚", sub: "大堡礁", query: "great barrier reef australia coral", dest: "澳大利亚", top: 68, left: 76, size: "sm", continent: "大洋洲" },
+  // 亚洲
+  { name: "北海道", sub: "春日赏樱", query: "hokkaido cherry blossom japan spring", dest: "北海道", top: 25, left: 90, size: "md", continent: "亚洲" },
+  { name: "菲律宾科隆", sub: "潜水天堂", query: "coron palawan island diving lagoon", dest: "科隆岛", top: 48, left: 83, size: "lg", continent: "亚洲" },
+  { name: "巴厘岛", sub: "神庙与稻田", query: "bali rice terrace temple indonesia", dest: "巴厘岛", top: 62, left: 82, size: "sm", continent: "亚洲" },
+  { name: "马尔代夫", sub: "水上天堂", query: "maldives overwater villa ocean", dest: "马尔代夫", top: 54, left: 70, size: "md", continent: "亚洲" },
+  { name: "泰国清迈", sub: "古城寺庙", query: "chiang mai thailand temple golden", dest: "清迈", top: 43, left: 77, size: "sm", continent: "亚洲" },
+  { name: "京都", sub: "千年古都", query: "kyoto japan temple bamboo geisha", dest: "京都", top: 31, left: 88, size: "sm", continent: "亚洲" },
+  { name: "迪拜", sub: "奢华之城", query: "dubai skyline burj khalifa luxury", dest: "迪拜", top: 38, left: 65, size: "sm", continent: "亚洲" },
+  { name: "尼泊尔", sub: "喜马拉雅", query: "nepal himalaya mountain trek everest", dest: "尼泊尔", top: 36, left: 74, size: "sm", continent: "亚洲" },
+  // 欧洲
+  { name: "冰岛极光", sub: "奇幻之旅", query: "iceland northern lights aurora", dest: "冰岛", top: 10, left: 45, size: "md", continent: "欧洲" },
+  { name: "圣托里尼", sub: "蓝白梦幻", query: "santorini greece blue dome sunset", dest: "圣托里尼", top: 30, left: 57, size: "sm", continent: "欧洲" },
+  { name: "瑞士雪山", sub: "阿尔卑斯", query: "swiss alps matterhorn snow", dest: "瑞士", top: 23, left: 52, size: "sm", continent: "欧洲" },
+  { name: "挪威峡湾", sub: "壮美北欧", query: "norway fjord scenic landscape", dest: "挪威", top: 12, left: 52, size: "sm", continent: "欧洲" },
+  { name: "巴黎", sub: "浪漫之都", query: "paris eiffel tower seine river", dest: "巴黎", top: 21, left: 51, size: "sm", continent: "欧洲" },
+  { name: "巴塞罗那", sub: "高迪之城", query: "barcelona sagrada familia gaudi spain", dest: "巴塞罗那", top: 27, left: 51, size: "sm", continent: "欧洲" },
+  { name: "布拉格", sub: "百塔之城", query: "prague castle charles bridge czech", dest: "布拉格", top: 20, left: 54, size: "sm", continent: "欧洲" },
+  // 北美洲
+  { name: "纽约", sub: "不夜之城", query: "new york manhattan skyline night", dest: "纽约", top: 27, left: 29, size: "sm", continent: "北美洲" },
+  { name: "夏威夷", sub: "阳光海浪", query: "hawaii waikiki beach sunset", dest: "夏威夷", top: 42, left: 7, size: "sm", continent: "北美洲" },
+  { name: "旧金山", sub: "金门大桥", query: "san francisco golden gate bridge fog", dest: "旧金山", top: 29, left: 16, size: "sm", continent: "北美洲" },
+  { name: "墨西哥坎昆", sub: "加勒比海", query: "cancun mexico caribbean beach resort", dest: "坎昆", top: 41, left: 26, size: "md", continent: "北美洲" },
+  { name: "班夫国家公园", sub: "落基山脉", query: "banff national park canada rocky mountain lake", dest: "班夫", top: 19, left: 18, size: "sm", continent: "北美洲" },
+  // 南美洲
+  { name: "秘鲁", sub: "失落文明", query: "machu picchu peru inca ruins", dest: "秘鲁", top: 66, left: 30, size: "sm", continent: "南美洲" },
+  { name: "巴塔哥尼亚", sub: "世界尽头", query: "patagonia glacier argentina", dest: "巴塔哥尼亚", top: 88, left: 30, size: "sm", continent: "南美洲" },
+  { name: "里约热内卢", sub: "狂欢之城", query: "rio de janeiro brazil christ redeemer carnival", dest: "里约热内卢", top: 73, left: 38, size: "md", continent: "南美洲" },
+  { name: "加拉帕戈斯", sub: "达尔文群岛", query: "galapagos islands ecuador wildlife tortoise", dest: "加拉帕戈斯", top: 57, left: 25, size: "sm", continent: "南美洲" },
+  // 非洲
+  { name: "肯尼亚", sub: "动物迁徙", query: "kenya safari animal migration", dest: "肯尼亚", top: 57, left: 60, size: "md", continent: "非洲" },
+  { name: "摩洛哥沙漠", sub: "撒哈拉之旅", query: "morocco sahara desert camel", dest: "摩洛哥", top: 34, left: 49, size: "sm", continent: "非洲" },
+  { name: "南非开普敦", sub: "好望角", query: "cape town south africa table mountain", dest: "开普敦", top: 81, left: 55, size: "sm", continent: "非洲" },
+  { name: "坦桑尼亚", sub: "乞力马扎罗", query: "kilimanjaro tanzania safari serengeti", dest: "坦桑尼亚", top: 61, left: 60, size: "sm", continent: "非洲" },
+  { name: "埃及", sub: "金字塔", query: "egypt pyramids giza sphinx cairo", dest: "埃及", top: 35, left: 59, size: "sm", continent: "非洲" },
+  // 大洋洲
+  { name: "澳大利亚", sub: "大堡礁", query: "great barrier reef australia coral", dest: "澳大利亚", top: 70, left: 91, size: "sm", continent: "大洋洲" },
+  { name: "新西兰", sub: "中土世界", query: "new zealand milford sound fjord mountain", dest: "新西兰", top: 86, left: 96, size: "md", continent: "大洋洲" },
+  { name: "斐济", sub: "南太平洋", query: "fiji island tropical beach resort", dest: "斐济", top: 70, left: 95, size: "sm", continent: "大洋洲" },
+  { name: "悉尼", sub: "歌剧院", query: "sydney opera house harbour bridge", dest: "悉尼", top: 81, left: 92, size: "sm", continent: "大洋洲" },
 ];
 
-function pickBubbles(pool: MapBubble[], count: number): MapBubble[] {
+const continentZoom: Record<string, { scale: number; x: number; y: number }> = {
+  "全部": { scale: 1, x: 0, y: 0 },
+  "亚洲": { scale: 2, x: -50, y: -15 },
+  "欧洲": { scale: 2.2, x: -24, y: 3 },
+  "北美洲": { scale: 2, x: 3, y: -3 },
+  "南美洲": { scale: 2, x: -6, y: -45 },
+  "非洲": { scale: 2, x: -30, y: -30 },
+  "大洋洲": { scale: 2, x: -67, y: -51 },
+};
+
+function pickBubbles(pool: MapBubble[], count: number, minDist = 14): MapBubble[] {
   const shuffled = [...pool].sort(() => Math.random() - 0.5);
   const picked: MapBubble[] = [];
   for (const b of shuffled) {
     const tooClose = picked.some(
-      (p) => Math.abs(p.left - b.left) < 17 && Math.abs(p.top - b.top) < 17,
+      (p) => Math.abs(p.left - b.left) < minDist && Math.abs(p.top - b.top) < minDist,
     );
     if (!tooClose) {
       picked.push(b);
@@ -144,11 +178,14 @@ function InspirationMap() {
 
   const displayBubbles = useMemo(() => {
     if (activeContinent !== "全部") {
-      return allDestinations.filter((b) => b.continent === activeContinent);
+      const pool = allDestinations.filter((b) => b.continent === activeContinent);
+      return pickBubbles(pool, Math.min(pool.length, 6), 8);
     }
     return pickBubbles(allDestinations, 5);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeContinent]);
+
+  const zoom = continentZoom[activeContinent] ?? continentZoom["全部"];
 
   return (
     <div className="app-shell min-h-screen bg-[#f5f6fa] pb-20">
@@ -179,33 +216,25 @@ function InspirationMap() {
       {/* ═══ Map Area — with controls matching mockup ═══ */}
       <section className="relative mx-3 mt-2 overflow-hidden rounded-[20px] shadow-md" style={{ height: 260 }}>
         {/* World map background — generated from Natural Earth data */}
-        <div className="absolute inset-0 bg-[#dce8f0]">
+        {/* Zooming map layer */}
+        <div
+          className="absolute inset-0 bg-[#dce8f0]"
+          style={{
+            transform: `scale(${zoom.scale}) translate(${zoom.x}%, ${zoom.y}%)`,
+            transition: "transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
+            transformOrigin: "center center",
+          }}
+        >
           <img
             src="/world-map.svg?v=3"
             alt=""
-            className="h-full w-full object-cover"
+            className="h-full w-full"
             draggable={false}
           />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-white/15" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/5 to-white/15" />
 
-        {/* Top-left: region dropdown */}
-        <div className="absolute left-3 top-3 z-10">
-          <button className="flex items-center gap-1 rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-gray-700 shadow-sm">
-            全部地区
-            <ChevronDown className="h-3 w-3 text-gray-500" />
-          </button>
-        </div>
-
-        {/* Top-right: map legend */}
-        <div className="absolute right-3 top-3 z-10">
-          <button className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[10px] font-bold text-gray-600 shadow-sm">
-            <MapPin className="h-3 w-3 text-primary" /> 地图图例
-          </button>
-        </div>
-
-
-        {/* Floating destination bubbles with animations */}
+        {/* Floating destination bubbles — positioned via computed zoom offsets */}
         <style>{`
           @keyframes bubble-float {
             0%, 100% { transform: translate(-50%, -50%) translateY(0); }
@@ -227,16 +256,19 @@ function InspirationMap() {
           const px = isLg ? 64 : isMd ? 50 : 40;
           const floatDuration = 3 + idx * 0.4;
           const floatDelay = idx * 0.6;
+          const zoomedLeft = zoom.scale * (bubble.left + zoom.x);
+          const zoomedTop = zoom.scale * (bubble.top + zoom.y);
 
           return (
             <Link
-              key={bubble.name}
+              key={`${activeContinent}-${bubble.name}`}
               to="/explore"
               search={{ dest: bubble.dest }}
               className="absolute z-[6] flex flex-col items-center active:scale-90"
               style={{
-                top: `${bubble.top}%`,
-                left: `${bubble.left}%`,
+                top: `${zoomedTop}%`,
+                left: `${zoomedLeft}%`,
+                transition: "top 0.6s cubic-bezier(0.4,0,0.2,1), left 0.6s cubic-bezier(0.4,0,0.2,1)",
                 animation: `bubble-fade-in 0.5s ${floatDelay * 0.3}s both, bubble-float ${floatDuration}s ${floatDelay}s ease-in-out infinite`,
               }}
             >
@@ -272,6 +304,21 @@ function InspirationMap() {
             </Link>
           );
         })}
+
+        {/* Top-left: region dropdown */}
+        <div className="absolute left-3 top-3 z-10">
+          <button className="flex items-center gap-1 rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-gray-700 shadow-sm">
+            {activeContinent === "全部" ? "全部地区" : activeContinent}
+            <ChevronDown className="h-3 w-3 text-gray-500" />
+          </button>
+        </div>
+
+        {/* Top-right: map legend */}
+        <div className="absolute right-3 top-3 z-10">
+          <button className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[10px] font-bold text-gray-600 shadow-sm">
+            <MapPin className="h-3 w-3 text-primary" /> 地图图例
+          </button>
+        </div>
       </section>
 
       {/* ═══ Continent Tabs ═══ */}
