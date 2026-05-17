@@ -77,19 +77,21 @@ function extractXhsUrl(raw: string): string | null {
   return m ? m[0] : null;
 }
 
-function extractXhsNoteId(noteUrl: string): string | null {
+type XhsNoteRef = { noteId: string; xsecToken?: string };
+
+function extractXhsNoteRef(noteUrl: string): XhsNoteRef | null {
   const m = noteUrl.match(/xiaohongshu\.com\/(?:explore|discovery\/item)\/([a-zA-Z0-9]+)/);
-  return m ? m[1] : null;
+  if (!m) return null;
+  const noteId = m[1];
+  const tokenMatch = noteUrl.match(/xsec_token=([^&\s]+)/);
+  return { noteId, xsecToken: tokenMatch?.[1] };
 }
 
-async function resolveXhsShortLink(shortUrl: string): Promise<string | null> {
+async function resolveXhsShortLink(shortUrl: string): Promise<XhsNoteRef | null> {
   try {
     const resp = await fetch(shortUrl, { redirect: "manual" });
     const location = resp.headers.get("location");
-    if (location) {
-      const id = extractXhsNoteId(location);
-      if (id) return id;
-    }
+    if (location) return extractXhsNoteRef(location);
     return null;
   } catch {
     return null;
@@ -104,18 +106,20 @@ async function fetchXhsViaTikHub(noteUrl: string): Promise<string | null> {
   }
 
   try {
-    let noteId = extractXhsNoteId(noteUrl);
-    if (!noteId && noteUrl.includes("xhslink.com")) {
-      noteId = await resolveXhsShortLink(noteUrl);
+    let ref = extractXhsNoteRef(noteUrl);
+    if (!ref && noteUrl.includes("xhslink.com")) {
+      ref = await resolveXhsShortLink(noteUrl);
     }
-    if (!noteId) {
+    if (!ref) {
       console.log(`[XHS] Could not extract note ID from: ${noteUrl}`);
       return null;
     }
 
-    console.log(`[XHS] Fetching via TikHub API, note ID: ${noteId}`);
+    const params = new URLSearchParams({ note_id: ref.noteId });
+    if (ref.xsecToken) params.set("xsec_token", ref.xsecToken);
+    console.log(`[XHS] Fetching via TikHub API, note ID: ${ref.noteId}, has xsec_token: ${!!ref.xsecToken}`);
     const resp = await fetch(
-      `https://api.tikhub.io/api/v1/xiaohongshu/web_v3/fetch_note_detail?note_id=${noteId}`,
+      `https://api.tikhub.io/api/v1/xiaohongshu/web_v3/fetch_note_detail?${params}`,
       {
         headers: {
           Authorization: `Bearer ${apiKey}`,
