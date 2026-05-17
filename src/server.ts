@@ -115,11 +115,9 @@ async function fetchXhsViaTikHub(noteUrl: string): Promise<string | null> {
       return null;
     }
 
-    const params = new URLSearchParams({ note_id: ref.noteId });
-    if (ref.xsecToken) params.set("xsec_token", ref.xsecToken);
-    console.log(`[XHS] Fetching via TikHub API, note ID: ${ref.noteId}, has xsec_token: ${!!ref.xsecToken}`);
+    console.log(`[XHS] Fetching via TikHub API, note ID: ${ref.noteId}`);
     const resp = await fetch(
-      `https://api.tikhub.io/api/v1/xiaohongshu/web_v3/fetch_note_detail?${params}`,
+      `https://api.tikhub.io/api/v1/xiaohongshu/app/get_note_info?note_id=${ref.noteId}`,
       {
         headers: {
           Authorization: `Bearer ${apiKey}`,
