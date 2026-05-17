@@ -134,23 +134,23 @@ async function fetchXhsViaTikHub(noteUrl: string): Promise<string | null> {
     }
 
     const json = await resp.json() as any;
-    console.log(`[XHS] TikHub response keys: ${JSON.stringify(Object.keys(json?.data ?? json ?? {})).slice(0, 200)}`);
-    const noteData = json?.data?.note_item?.note_card
+    // app/get_note_info structure: data.data[0].note_list[0]
+    const noteData = json?.data?.data?.[0]?.note_list?.[0]
+      ?? json?.data?.note_item?.note_card
       ?? json?.data?.note_card
-      ?? json?.data?.note_items?.[0]?.note_card
       ?? json?.data?.items?.[0]?.note_card
       ?? json?.data;
 
-    if (!noteData) {
+    if (!noteData?.title && !noteData?.desc) {
       console.log("[XHS] TikHub returned no note data");
       return null;
     }
 
     const title = noteData.title || noteData.display_title || "";
     const desc = noteData.desc || noteData.note_desc || "";
-    const tags = (noteData.tag_list || noteData.tags || [])
-      .map((t: any) => t?.name || t)
-      .filter(Boolean);
+    const tags = (noteData.tag_list || noteData.tags || noteData.topics || [])
+      .map((t: any) => t?.name || t?.topic_name || t)
+      .filter((t: any) => typeof t === "string" && t.length > 0);
 
     const parts = [
       title && `标题: ${title}`,
