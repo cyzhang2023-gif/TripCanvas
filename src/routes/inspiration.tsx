@@ -182,7 +182,7 @@ function InspirationMap() {
         {/* World map background — generated from Natural Earth data */}
         <div className="absolute inset-0 bg-[#dce8f0]">
           <img
-            src="/world-map.svg"
+            src="/world-map.svg?v=2"
             alt=""
             className="h-full w-full object-cover"
             draggable={false}
