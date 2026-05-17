@@ -115,7 +115,7 @@ async function fetchXhsViaTikHub(noteUrl: string): Promise<string | null> {
 
     console.log(`[XHS] Fetching via TikHub API, note ID: ${noteId}`);
     const resp = await fetch(
-      `https://api.tikhub.dev/api/v1/xiaohongshu/web_v2/fetch_one_note?note_id=${noteId}`,
+      `https://api.tikhub.io/api/v1/xiaohongshu/web_v3/fetch_note_detail?note_id=${noteId}`,
       {
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -126,13 +126,16 @@ async function fetchXhsViaTikHub(noteUrl: string): Promise<string | null> {
     );
 
     if (!resp.ok) {
-      console.log(`[XHS] TikHub API returned ${resp.status}`);
+      const errText = await resp.text().catch(() => "");
+      console.log(`[XHS] TikHub API returned ${resp.status}: ${errText.slice(0, 200)}`);
       return null;
     }
 
     const json = await resp.json() as any;
+    console.log(`[XHS] TikHub response keys: ${JSON.stringify(Object.keys(json?.data ?? json ?? {})).slice(0, 200)}`);
     const noteData = json?.data?.note_item?.note_card
       ?? json?.data?.note_card
+      ?? json?.data?.note_items?.[0]?.note_card
       ?? json?.data?.items?.[0]?.note_card
       ?? json?.data;
 
