@@ -115,6 +115,8 @@ function Index() {
   const [imageBase64, setImageBase64] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [showXhsDrawer, setShowXhsDrawer] = useState(false);
+  const [xhsNoteText, setXhsNoteText] = useState("");
 
   const { seasonalPicks, communityCards } = useMemo(() => {
     if (!n8nRoutes || n8nRoutes.length < 3) return { seasonalPicks: [] as typeof n8nRoutes, communityCards: [] as typeof n8nRoutes };
@@ -133,7 +135,12 @@ function Index() {
     catch (err) { setError(err instanceof Error ? err.message : "导入失败，请重试"); }
     finally { setSubmitting(false); }
   };
-  const submitHero = () => { if (!content.trim()) { nav({ to: "/quiz" }); return; } void doImport(inferKind(content), content); };
+  const isXhsLink = /xiaohongshu\.com|xhslink\.com/.test(content);
+  const submitHero = () => {
+    if (!content.trim()) { nav({ to: "/quiz" }); return; }
+    if (isXhsLink) { setShowXhsDrawer(true); return; }
+    void doImport(inferKind(content), content);
+  };
   const submitDrawer = () => {
     const parts: string[] = [];
     if (drawerText.trim()) parts.push(drawerText.trim());
@@ -187,7 +194,7 @@ function Index() {
               {submitting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
             </button>
           </div>
-          {content && /xiaohongshu\.com|xhslink\.com/.test(content) ? (
+          {content && isXhsLink ? (
             <div className="mt-1.5 flex items-center gap-1.5">
               <span className="shrink-0 rounded-full bg-emerald-500/90 backdrop-blur text-white text-[9px] px-2.5 py-[3px] font-medium flex items-center gap-1">
                 <span className="inline-block h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
@@ -418,6 +425,63 @@ function Index() {
           </div>
         </div>
       </section>
+
+      {/* ══════ XHS Import Sheet ══════ */}
+      {showXhsDrawer && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) setShowXhsDrawer(false); }}>
+          <div className="w-full max-w-[430px] rounded-t-[20px] bg-white p-4 shadow-2xl">
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <p className="text-[14px] font-bold text-foreground flex items-center gap-1.5">
+                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-rose-500 text-white text-[10px] font-black">红</span>
+                  导入小红书笔记
+                </p>
+                <p className="mt-0.5 text-[10px] text-muted-foreground">粘贴笔记正文，AI 自动解析为旅行路线</p>
+              </div>
+              <button type="button" onClick={() => setShowXhsDrawer(false)} className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">关闭</button>
+            </div>
+
+            <div className="rounded-xl bg-amber-50 border border-amber-200/60 px-3 py-2 mb-3">
+              <p className="text-[10px] text-amber-700 font-medium leading-relaxed">
+                📋 在小红书 App 中打开笔记 → 长按正文 → 复制 → 粘贴到下方
+              </p>
+            </div>
+
+            <textarea
+              value={xhsNoteText}
+              onChange={(e) => setXhsNoteText(e.target.value)}
+              placeholder={"粘贴小红书笔记正文...\n\n例如：Day1 东京浅草寺→秋叶原→涩谷，Day2 �的仓→江之岛..."}
+              className="h-28 w-full resize-none rounded-xl bg-muted px-3 py-2.5 text-[11px] leading-relaxed outline-none placeholder:text-muted-foreground"
+            />
+
+            <div className="mt-2 flex gap-2">
+              <button type="button"
+                onClick={() => {
+                  void doImport("text", content);
+                  setShowXhsDrawer(false);
+                }}
+                disabled={submitting}
+                className="flex h-9 flex-1 items-center justify-center gap-1 rounded-full border border-gray-200 text-[11px] font-semibold text-gray-600 disabled:opacity-70">
+                仅用标题生成
+              </button>
+              <button type="button"
+                onClick={() => {
+                  const combined = xhsNoteText.trim()
+                    ? `来源: 小红书笔记\n\n${xhsNoteText.trim()}`
+                    : content;
+                  void doImport("text", combined);
+                  setShowXhsDrawer(false);
+                }}
+                disabled={submitting || !xhsNoteText.trim()}
+                className="flex h-9 flex-[2] items-center justify-center gap-1.5 rounded-full text-[12px] font-bold text-white disabled:opacity-50"
+                style={{ background: "var(--gradient-ai)" }}>
+                {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                解析完整笔记
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ══════ Import Sheet ══════ */}
       {showImport && (
