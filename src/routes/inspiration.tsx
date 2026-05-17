@@ -7,8 +7,6 @@ import {
   Flame,
   Heart,
   MapPin,
-  Minus,
-  Plus,
   RefreshCw,
   Share2,
   Snowflake,
@@ -45,7 +43,7 @@ const allDestinations: MapBubble[] = [
   { name: "北海道", sub: "春日赏樱", query: "hokkaido cherry blossom japan spring", dest: "北海道", top: 24, left: 84, size: "md", continent: "亚洲" },
   { name: "菲律宾科隆", sub: "潜水天堂", query: "coron palawan island diving lagoon", dest: "科隆岛", top: 48, left: 78, size: "lg", continent: "亚洲" },
   { name: "巴厘岛", sub: "神庙与稻田", query: "bali rice terrace temple indonesia", dest: "巴厘岛", top: 60, left: 76, size: "sm", continent: "亚洲" },
-  { name: "纽约", sub: "不夜之城", query: "new york manhattan skyline night", dest: "纽约", top: 30, left: 28, size: "sm", continent: "北美洲" },
+  { name: "纽约", sub: "不夜之城", query: "new york manhattan skyline night", dest: "纽约", top: 27, left: 29.5, size: "sm", continent: "北美洲" },
   { name: "夏威夷", sub: "阳光海浪", query: "hawaii waikiki beach sunset", dest: "夏威夷", top: 42, left: 14, size: "sm", continent: "北美洲" },
   { name: "秘鲁", sub: "失落文明", query: "machu picchu peru inca ruins", dest: "秘鲁", top: 62, left: 28, size: "sm", continent: "南美洲" },
   { name: "巴塔哥尼亚", sub: "世界尽头", query: "patagonia glacier argentina", dest: "巴塔哥尼亚", top: 78, left: 32, size: "sm", continent: "南美洲" },
@@ -206,18 +204,6 @@ function InspirationMap() {
           </button>
         </div>
 
-        {/* Right side: zoom controls */}
-        <div className="absolute bottom-14 right-3 z-10 flex flex-col gap-1">
-          <button className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-gray-600 shadow-sm">
-            <Plus className="h-4 w-4" />
-          </button>
-          <button className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-gray-600 shadow-sm">
-            <Minus className="h-4 w-4" />
-          </button>
-        </div>
-        <button className="absolute bottom-3 right-3 z-10 flex h-8 w-8 items-center justify-center rounded-lg bg-white text-gray-500 shadow-sm">
-          <MapPin className="h-4 w-4 text-primary" />
-        </button>
 
         {/* Floating destination bubbles with animations */}
         <style>{`
