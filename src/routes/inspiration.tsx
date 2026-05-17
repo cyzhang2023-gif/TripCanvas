@@ -178,11 +178,11 @@ function InspirationMap() {
       </header>
 
       {/* ═══ Map Area — with controls matching mockup ═══ */}
-      <section className="relative mx-3 mt-2 overflow-hidden rounded-[20px] shadow-md" style={{ height: 340 }}>
+      <section className="relative mx-3 mt-2 overflow-hidden rounded-[20px] shadow-md" style={{ height: 260 }}>
         {/* World map background — generated from Natural Earth data */}
         <div className="absolute inset-0 bg-[#dce8f0]">
           <img
-            src="/world-map.svg?v=2"
+            src="/world-map.svg?v=3"
             alt=""
             className="h-full w-full object-cover"
             draggable={false}
