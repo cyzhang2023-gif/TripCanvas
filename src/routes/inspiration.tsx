@@ -1,17 +1,17 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
+  ChevronDown,
   ChevronLeft,
   Clock,
+  Compass,
+  Flame,
   Heart,
   MapPin,
+  Minus,
+  Plus,
   RefreshCw,
   Share2,
-  Sparkles,
-  Compass,
-  TreePine,
   Snowflake,
-  Globe,
-  ArrowRight,
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { BottomNav } from "@/components/BottomNav";
@@ -22,7 +22,7 @@ export const Route = createFileRoute("/inspiration")({
   head: () => ({ meta: [{ title: "灵感地图 · Routey" }] }),
 });
 
-/* ─── Continent bubble data ─── */
+/* ─── Map bubble data ─── */
 type MapBubble = {
   name: string;
   sub: string;
@@ -34,77 +34,55 @@ type MapBubble = {
 };
 
 const mapBubbles: MapBubble[] = [
-  { name: "日本赏樱", sub: "春日限定", query: "日本樱花 富士山", top: "20%", left: "16%", size: "md", continent: "亚洲" },
-  { name: "欧洲小镇", sub: "浪漫与历史", query: "欧洲小镇 布拉格", top: "10%", left: "46%", size: "md", continent: "欧洲" },
-  { name: "冰岛极光", sub: "奇幻之旅", query: "冰岛极光 aurora", top: "15%", left: "82%", size: "sm", continent: "欧洲" },
-  { name: "大阪美食", sub: "活力与美食", query: "大阪道顿堀", top: "48%", left: "50%", size: "lg", continent: "亚洲" },
-  { name: "东南亚海岛", sub: "碧海蓝天", query: "泰国普吉岛海滩", top: "72%", left: "22%", size: "md", continent: "亚洲" },
-  { name: "文化探索", sub: "千年文明", query: "柬埔寨吴哥窟", top: "62%", left: "78%", size: "sm", continent: "亚洲" },
+  { name: "日本赏樱", sub: "春日限定", query: "日本樱花 富士山", top: "22%", left: "15%", size: "md", continent: "亚洲" },
+  { name: "欧洲小镇", sub: "浪漫与历史", query: "欧洲小镇 布拉格", top: "12%", left: "42%", size: "md", continent: "欧洲" },
+  { name: "冰岛极光", sub: "奇幻之旅", query: "冰岛极光 aurora", top: "14%", left: "76%", size: "sm", continent: "欧洲" },
+  { name: "大阪·潮流街区", sub: "活力与美食", query: "大阪道顿堀", top: "46%", left: "44%", size: "lg", continent: "亚洲" },
+  { name: "东南亚海岛", sub: "碧海蓝天", query: "泰国普吉岛海滩", top: "66%", left: "20%", size: "md", continent: "亚洲" },
+  { name: "文化探索", sub: "千年文明", query: "柬埔寨吴哥窟", top: "58%", left: "74%", size: "sm", continent: "亚洲" },
 ];
 
 const continents = ["全部", "亚洲", "欧洲", "北美洲", "南美洲", "非洲", "大洋洲"];
 
-/* ─── Theme label mapping — always Chinese ─── */
-const themeLabels: Record<string, string> = {
-  "城市漫步": "城市漫步",
-  "美食之旅": "美食之旅",
-  "自然风光": "自然风光",
-  "文化探索": "文化探索",
-  "海滩度假": "海滩度假",
-  "购物血拼": "购物血拼",
-  "奢华体验": "奢华体验",
-  "亲子出行": "亲子出行",
-  // English fallbacks
-  food: "美食之旅",
-  culture: "文化探索",
-  luxury: "奢华体验",
-  nature: "自然风光",
-  beach: "海滩度假",
-  city: "城市漫步",
-  shopping: "购物血拼",
-  family: "亲子出行",
-  adventure: "户外探险",
+/* ─── Curated recommendation cards ─── */
+type CuratedItem = {
+  title: string;
+  label: string;
+  labelColor: string;
+  desc: string;
+  season: string;
+  query: string;
+  dest: string;
 };
 
+const curatedRecommendations: CuratedItem[] = [
+  { title: "东京·上野公园", label: "日本赏樱", labelColor: "#e11d48", desc: "樱花与古建筑的诗意相遇", season: "最佳季节 3-4月", query: "东京上野公园樱花", dest: "东京" },
+  { title: "泰国·普吉岛", label: "东南亚海岛", labelColor: "#0891b2", desc: "阳光沙滩，慢享悠闲时光", season: "最佳季节 11-2月", query: "泰国普吉岛", dest: "普吉岛" },
+  { title: "柬埔寨·吴哥窟", label: "文化探索", labelColor: "#7c3aed", desc: "穿越千年的文明奇迹", season: "最佳季节 11-2月", query: "柬埔寨吴哥窟日出", dest: "吴哥窟" },
+  { title: "奥地利·哈尔施塔特", label: "欧洲小镇", labelColor: "#2563eb", desc: "童话般的湖畔小镇", season: "最佳季节 5-9月", query: "奥地利哈尔施塔特", dest: "哈尔施塔特" },
+  { title: "希腊·圣托里尼", label: "海岛度假", labelColor: "#0d9488", desc: "蓝白相间的爱琴海明珠", season: "最佳季节 5-10月", query: "希腊圣托里尼日落", dest: "圣托里尼" },
+  { title: "印尼·巴厘岛", label: "自然风光", labelColor: "#059669", desc: "神庙与稻田的和谐之美", season: "最佳季节 4-10月", query: "巴厘岛梯田", dest: "巴厘岛" },
+];
+
+/* ─── Theme label mapping ─── */
+const themeLabels: Record<string, string> = {
+  "城市漫步": "城市漫步", "美食之旅": "美食之旅", "自然风光": "自然风光",
+  "文化探索": "文化探索", "海滩度假": "海滩度假", "购物血拼": "购物血拼",
+  "奢华体验": "奢华体验", "亲子出行": "亲子出行",
+  food: "美食之旅", culture: "文化探索", luxury: "奢华体验",
+  nature: "自然风光", beach: "海滩度假", city: "城市漫步",
+  shopping: "购物血拼", family: "亲子出行", adventure: "户外探险",
+};
 const themeColors: Record<string, string> = {
   "城市漫步": "#2563eb", "美食之旅": "#ea580c", "自然风光": "#059669",
   "文化探索": "#7c3aed", "海滩度假": "#0891b2", "购物血拼": "#e11d48",
   "奢华体验": "#b45309", "亲子出行": "#0d9488", "户外探险": "#16a34a",
   "推荐": "#6366f1",
 };
-
 function resolveLabel(raw?: string): string {
   if (!raw) return "推荐";
   return themeLabels[raw] ?? themeLabels[raw.toLowerCase()] ?? raw;
 }
-
-/* ─── Curated fallback ─── */
-type CuratedItem = {
-  city: string;
-  country: string;
-  label: string;
-  labelColor: string;
-  desc: string;
-  season: string;
-  query: string;
-};
-
-const curatedRecommendations: CuratedItem[] = [
-  { city: "东京", country: "日本", label: "日本赏樱", labelColor: "#e11d48", desc: "樱花与古建筑的诗意相遇", season: "最佳季节 3-4月", query: "东京上野公园樱花" },
-  { city: "普吉岛", country: "泰国", label: "海滩度假", labelColor: "#0891b2", desc: "阳光沙滩，慢享悠闲时光", season: "最佳季节 11-2月", query: "泰国普吉岛" },
-  { city: "吴哥窟", country: "柬埔寨", label: "文化探索", labelColor: "#7c3aed", desc: "穿越千年的文明奇迹", season: "最佳季节 11-2月", query: "柬埔寨吴哥窟日出" },
-  { city: "哈尔施塔特", country: "奥地利", label: "欧洲小镇", labelColor: "#2563eb", desc: "童话般的湖畔小镇", season: "最佳季节 5-9月", query: "奥地利哈尔施塔特" },
-  { city: "圣托里尼", country: "希腊", label: "海滩度假", labelColor: "#0d9488", desc: "蓝白相间的爱琴海明珠", season: "最佳季节 5-10月", query: "希腊圣托里尼日落" },
-  { city: "巴厘岛", country: "印尼", label: "自然风光", labelColor: "#059669", desc: "神庙与稻田的和谐之美", season: "最佳季节 4-10月", query: "巴厘岛梯田" },
-];
-
-/* ─── Quick link data ─── */
-const quickLinks = [
-  { icon: Compass, label: "热门灵感", color: "text-orange-500", bg: "bg-orange-50", cat: "nature" as const },
-  { icon: TreePine, label: "小众秘境", color: "text-emerald-500", bg: "bg-emerald-50", cat: "outdoor" as const },
-  { icon: Snowflake, label: "季节限定", color: "text-blue-500", bg: "bg-blue-50", cat: undefined },
-  { icon: Globe, label: "全部目的地", color: "text-violet-500", bg: "bg-violet-50", cat: undefined },
-];
 
 /* ─── Component ─── */
 function InspirationMap() {
@@ -121,11 +99,7 @@ function InspirationMap() {
         if (seen.has(r.city)) continue;
         seen.add(r.city);
         const label = resolveLabel(r.route_theme || r.tags?.split(",")[0]);
-        items.push({
-          ...r,
-          _label: label,
-          _labelColor: themeColors[label] ?? "#6366f1",
-        });
+        items.push({ ...r, _label: label, _labelColor: themeColors[label] ?? "#6366f1" });
         if (items.length >= 12) break;
       }
       return items;
@@ -143,72 +117,106 @@ function InspirationMap() {
     return slice;
   }, [recommendations, recoOffset]);
 
-  const handleRefresh = useCallback(() => {
-    setRecoOffset((o) => o + 4);
-  }, []);
+  const handleRefresh = useCallback(() => setRecoOffset((o) => o + 4), []);
 
   const filteredBubbles = activeContinent === "全部"
     ? mapBubbles
     : mapBubbles.filter((b) => b.continent === activeContinent);
 
   return (
-    <div className="min-h-screen bg-[#f4f5f9] pb-24">
-      {/* ═══ Header ═══ */}
-      <header className="sticky top-0 z-30 bg-[#f4f5f9]/90 backdrop-blur-lg">
-        <div className="flex items-center justify-between px-5 pb-3 pt-14">
-          <div className="flex items-center gap-3">
-            <Link
-              to="/"
-              className="pressable flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm"
-            >
-              <ChevronLeft className="h-5 w-5 text-gray-700" />
-            </Link>
-            <div>
-              <h1 className="text-[22px] font-extrabold tracking-tight text-gray-900">灵感地图</h1>
-              <p className="text-[11px] tracking-wide text-gray-400">发现世界各地的旅行灵感</p>
-            </div>
+    <div className="app-shell min-h-screen bg-[#f5f6fa] pb-20">
+      {/* ═══ Header — matching mockup exactly ═══ */}
+      <header className="flex items-center justify-between px-4 pb-1 pt-12">
+        <div className="flex items-center gap-2.5">
+          <Link
+            to="/"
+            className="pressable flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white"
+          >
+            <ChevronLeft className="h-5 w-5 text-gray-700" />
+          </Link>
+          <div>
+            <h1 className="text-[18px] font-extrabold text-gray-900">灵感地图</h1>
+            <p className="text-[10px] text-gray-400">探索世界精彩，发现旅行灵感</p>
           </div>
-          <div className="flex items-center gap-2">
-            <button className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm active:bg-gray-50">
-              <Heart className="h-[18px] w-[18px] text-gray-500" />
-            </button>
-            <button className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm active:bg-gray-50">
-              <Share2 className="h-[18px] w-[18px] text-gray-500" />
-            </button>
-          </div>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <button className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white active:bg-gray-50">
+            <Heart className="h-4 w-4 text-gray-600" />
+          </button>
+          <button className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white active:bg-gray-50">
+            <Share2 className="h-4 w-4 text-gray-600" />
+          </button>
         </div>
       </header>
 
-      {/* ═══ Interactive Map Hero ═══ */}
-      <section className="relative mx-4 overflow-hidden rounded-[24px] shadow-lg" style={{ height: 280 }}>
+      {/* ═══ Map Area — with controls matching mockup ═══ */}
+      <section className="relative mx-3 mt-2 overflow-hidden rounded-[20px] shadow-md" style={{ height: 340 }}>
+        {/* Map background */}
         <img
-          src="/api/spot-image?q=world+map+watercolor+illustration"
-          alt="map"
+          src="/api/spot-image?q=world+map+watercolor+pastel+illustration"
+          alt="map bg"
           className="absolute inset-0 h-full w-full object-cover"
-          style={{ filter: "brightness(1.08) saturate(0.85)" }}
+          style={{ filter: "brightness(1.06) saturate(0.85)" }}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/10 to-white/40" />
+        <div className="absolute inset-0 bg-white/25" />
+
+        {/* Top-left: region dropdown */}
+        <div className="absolute left-3 top-3 z-10">
+          <button className="flex items-center gap-1 rounded-full bg-white px-3 py-1.5 text-[11px] font-bold text-gray-700 shadow-sm">
+            全部地区
+            <ChevronDown className="h-3 w-3 text-gray-500" />
+          </button>
+        </div>
+
+        {/* Top-right: map legend */}
+        <div className="absolute right-3 top-3 z-10">
+          <button className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[10px] font-bold text-gray-600 shadow-sm">
+            <MapPin className="h-3 w-3 text-primary" /> 地图图例
+          </button>
+        </div>
+
+        {/* Right side: zoom controls */}
+        <div className="absolute bottom-14 right-3 z-10 flex flex-col gap-1">
+          <button className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-gray-600 shadow-sm">
+            <Plus className="h-4 w-4" />
+          </button>
+          <button className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-gray-600 shadow-sm">
+            <Minus className="h-4 w-4" />
+          </button>
+        </div>
+        <button className="absolute bottom-3 right-3 z-10 flex h-8 w-8 items-center justify-center rounded-lg bg-white text-gray-500 shadow-sm">
+          <MapPin className="h-4 w-4 text-primary" />
+        </button>
+
+        {/* Center blue pin marker */}
+        <div className="absolute z-[5]" style={{ top: "58%", left: "44%", transform: "translate(-50%,-50%)" }}>
+          <MapPin className="h-5 w-5 text-primary drop-shadow-md" fill="currentColor" />
+        </div>
 
         {/* Floating destination bubbles */}
         {filteredBubbles.map((bubble) => {
-          const px = bubble.size === "lg" ? 68 : bubble.size === "md" ? 52 : 42;
-          const ring = bubble.size === "lg"
-            ? "ring-[3px] ring-white shadow-xl"
-            : bubble.size === "md"
-              ? "ring-[2.5px] ring-white shadow-lg"
-              : "ring-2 ring-white/90 shadow-md";
+          const isLg = bubble.size === "lg";
+          const isMd = bubble.size === "md";
+          const px = isLg ? 72 : isMd ? 56 : 44;
 
           return (
             <Link
               key={bubble.name}
               to="/explore"
               search={{ dest: bubble.query.split(" ")[0] }}
-              className="absolute flex flex-col items-center transition-transform active:scale-90"
+              className="absolute z-[6] flex flex-col items-center transition-transform active:scale-90"
               style={{ top: bubble.top, left: bubble.left, transform: "translate(-50%,-50%)" }}
             >
               <div
-                className={`overflow-hidden rounded-full ${ring}`}
-                style={{ width: px, height: px }}
+                className="overflow-hidden rounded-full shadow-lg"
+                style={{
+                  width: px,
+                  height: px,
+                  border: isLg ? "3px solid rgba(67,97,238,0.45)" : "2.5px solid white",
+                  boxShadow: isLg
+                    ? "0 0 0 3px rgba(67,97,238,0.18), 0 4px 12px rgba(0,0,0,0.15)"
+                    : "0 3px 10px rgba(0,0,0,0.12)",
+                }}
               >
                 <img
                   src={`/api/spot-image?q=${encodeURIComponent(bubble.query)}`}
@@ -217,12 +225,16 @@ function InspirationMap() {
                   loading="lazy"
                 />
               </div>
-              <span className="mt-1 max-w-[72px] truncate text-center text-[10px] font-bold text-gray-800"
-                style={{ textShadow: "0 1px 3px rgba(255,255,255,0.9)" }}>
+              <span
+                className="mt-1 text-center text-[10px] font-bold text-gray-800"
+                style={{ textShadow: "0 1px 3px rgba(255,255,255,0.95)", maxWidth: 80 }}
+              >
                 {bubble.name}
               </span>
-              <span className="text-[8px] font-medium text-gray-500"
-                style={{ textShadow: "0 1px 2px rgba(255,255,255,0.9)" }}>
+              <span
+                className="text-[8px] font-medium text-gray-500"
+                style={{ textShadow: "0 1px 2px rgba(255,255,255,0.9)" }}
+              >
                 {bubble.sub}
               </span>
             </Link>
@@ -231,15 +243,15 @@ function InspirationMap() {
       </section>
 
       {/* ═══ Continent Tabs ═══ */}
-      <div className="no-scrollbar mt-4 flex items-center gap-2 overflow-x-auto px-4">
+      <div className="no-scrollbar mt-3 flex items-center gap-2 overflow-x-auto px-4 py-1">
         {continents.map((c) => (
           <button
             key={c}
             onClick={() => setActiveContinent(c)}
-            className={`pressable shrink-0 rounded-full px-4 py-[7px] text-[12px] font-bold tracking-wide transition-all ${
+            className={`pressable shrink-0 rounded-full px-4 py-[6px] text-[12px] font-bold transition-all ${
               activeContinent === c
-                ? "bg-gray-900 text-white shadow-md"
-                : "bg-white text-gray-500 shadow-sm active:bg-gray-50"
+                ? "bg-[#1e2a4a] text-white shadow-md"
+                : "border border-gray-200 bg-white text-gray-500"
             }`}
           >
             {c}
@@ -247,149 +259,144 @@ function InspirationMap() {
         ))}
       </div>
 
-      {/* ═══ Quick Links ═══ */}
-      <section className="mt-5 px-4">
-        <div className="grid grid-cols-4 gap-3">
-          {quickLinks.map(({ icon: Icon, label, color, bg, cat }) => (
-            <Link
-              key={label}
-              to="/explore"
-              {...(cat ? { search: { cat } } : {})}
-              className="flex flex-col items-center gap-1.5 rounded-2xl bg-white py-3 shadow-sm active:bg-gray-50"
-            >
-              <div className={`flex h-10 w-10 items-center justify-center rounded-full ${bg}`}>
-                <Icon className={`h-[18px] w-[18px] ${color}`} />
-              </div>
-              <span className="text-[11px] font-semibold text-gray-700">{label}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
       {/* ═══ Recommendations ═══ */}
-      <section className="mt-6 px-4">
+      <section className="mt-4 px-4">
         <div className="flex items-baseline justify-between">
           <div>
-            <h2 className="text-[18px] font-extrabold tracking-tight text-gray-900">为你推荐</h2>
-            <p className="mt-0.5 text-[11px] text-gray-400">基于你的兴趣智能推荐</p>
+            <h2 className="text-[16px] font-extrabold text-gray-900">为你推荐</h2>
+            <p className="text-[10px] text-gray-400">基于你的兴趣生成</p>
           </div>
           <button
             onClick={handleRefresh}
-            className="pressable flex items-center gap-1 rounded-full bg-white px-3 py-1.5 text-[11px] font-semibold text-gray-500 shadow-sm active:bg-gray-50"
+            className="pressable flex items-center gap-1 text-[11px] font-medium text-gray-400"
           >
             换一批 <RefreshCw className="h-3 w-3" />
           </button>
         </div>
 
-        {/* Two-column cards */}
-        <div className="mt-3 grid grid-cols-2 gap-3">
+        {/* Horizontal scroll cards — matching mockup */}
+        <div className="no-scrollbar -mx-4 mt-2.5 flex gap-2.5 overflow-x-auto px-4 pb-1">
           {recommendations
-            ? visibleRecos.map((r: any, i: number) => (
-                <Link
-                  key={r.id ?? i}
-                  to="/explore"
-                  search={{ dest: r.city }}
-                  className="group overflow-hidden rounded-2xl bg-white shadow-sm transition active:scale-[0.98]"
-                >
-                  <div className="relative aspect-[4/3] w-full overflow-hidden">
-                    <img
-                      src={r.cover_url || `/api/spot-image?q=${encodeURIComponent(r.city + " " + r.country + " 景点")}`}
-                      alt={r.city}
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/30 to-transparent" />
-                    <span
-                      className="absolute left-2.5 top-2.5 rounded-md px-2 py-[3px] text-[10px] font-bold text-white backdrop-blur-sm"
-                      style={{ background: `${r._labelColor}dd` }}
-                    >
-                      {r._label}
-                    </span>
-                  </div>
-                  <div className="px-3 pb-3 pt-2.5">
-                    <p className="truncate text-[14px] font-bold text-gray-900">
-                      {r.city}
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-gray-400">{r.country}</p>
-                    <p className="mt-1 line-clamp-1 text-[11px] leading-relaxed text-gray-500">
-                      {r.summary?.slice(0, 20) || r.route_title}
-                    </p>
-                    <div className="mt-1.5 flex items-center gap-1 text-[10px] text-gray-400">
-                      <Clock className="h-2.5 w-2.5" /> {r.days_count}天行程
+            ? visibleRecos.map((r: any, i: number) => {
+                const label = r._label;
+                const color = r._labelColor;
+                return (
+                  <Link
+                    key={r.id ?? i}
+                    to="/explore"
+                    search={{ dest: r.city }}
+                    className="group w-[140px] shrink-0 overflow-hidden rounded-xl bg-white shadow-sm transition active:scale-[0.98]"
+                  >
+                    <div className="relative h-[105px] w-full overflow-hidden">
+                      <img
+                        src={r.cover_url || `/api/spot-image?q=${encodeURIComponent(r.city + " " + r.country + " 景点")}`}
+                        alt={r.city}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                      <span
+                        className="absolute left-2 top-2 rounded-[4px] px-1.5 py-[2px] text-[9px] font-bold text-white"
+                        style={{ background: color }}
+                      >
+                        {label}
+                      </span>
                     </div>
-                  </div>
-                </Link>
-              ))
-            : curatedRecommendations.slice(0, 6).map((r, i) => (
+                    <div className="px-2 pb-2 pt-1.5">
+                      <p className="truncate text-[12px] font-bold text-gray-900">
+                        {r.country}·{r.city}
+                      </p>
+                      <p className="mt-0.5 truncate text-[10px] text-gray-400">
+                        {r.summary?.slice(0, 16) || r.route_title?.slice(0, 16)}
+                      </p>
+                      <p className="mt-1 flex items-center gap-0.5 text-[9px] text-gray-400">
+                        <Clock className="h-2.5 w-2.5" /> {r.days_count}天行程
+                      </p>
+                    </div>
+                  </Link>
+                );
+              })
+            : curatedRecommendations.map((r, i) => (
                 <Link
                   key={i}
                   to="/explore"
-                  search={{ dest: r.city }}
-                  className="group overflow-hidden rounded-2xl bg-white shadow-sm transition active:scale-[0.98]"
+                  search={{ dest: r.dest }}
+                  className="group w-[140px] shrink-0 overflow-hidden rounded-xl bg-white shadow-sm transition active:scale-[0.98]"
                 >
-                  <div className="relative aspect-[4/3] w-full overflow-hidden">
+                  <div className="relative h-[105px] w-full overflow-hidden">
                     <img
                       src={`/api/spot-image?q=${encodeURIComponent(r.query)}`}
-                      alt={r.city}
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      alt={r.title}
+                      className="h-full w-full object-cover"
                       loading="lazy"
                     />
-                    <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/30 to-transparent" />
                     <span
-                      className="absolute left-2.5 top-2.5 rounded-md px-2 py-[3px] text-[10px] font-bold text-white backdrop-blur-sm"
-                      style={{ background: `${r.labelColor}dd` }}
+                      className="absolute left-2 top-2 rounded-[4px] px-1.5 py-[2px] text-[9px] font-bold text-white"
+                      style={{ background: r.labelColor }}
                     >
                       {r.label}
                     </span>
                   </div>
-                  <div className="px-3 pb-3 pt-2.5">
-                    <p className="truncate text-[14px] font-bold text-gray-900">
-                      {r.city}
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-gray-400">{r.country}</p>
-                    <p className="mt-1 line-clamp-1 text-[11px] leading-relaxed text-gray-500">
-                      {r.desc}
-                    </p>
-                    <div className="mt-1.5 flex items-center gap-1 text-[10px] text-gray-400">
+                  <div className="px-2 pb-2 pt-1.5">
+                    <p className="truncate text-[12px] font-bold text-gray-900">{r.title}</p>
+                    <p className="mt-0.5 truncate text-[10px] text-gray-400">{r.desc}</p>
+                    <p className="mt-1 flex items-center gap-0.5 text-[9px] text-gray-400">
                       <Clock className="h-2.5 w-2.5" /> {r.season}
-                    </div>
+                    </p>
                   </div>
                 </Link>
               ))}
         </div>
       </section>
 
-      {/* ═══ AI Banner ═══ */}
-      <section className="mx-4 mt-6">
+      {/* ═══ AI Banner — matching mockup with robot + CTA ═══ */}
+      <section className="mx-4 mt-4">
         <div
-          className="overflow-hidden rounded-2xl p-5"
-          style={{
-            background: "linear-gradient(135deg, #eef2ff 0%, #ede9fe 40%, #e0f2fe 100%)",
-          }}
+          className="relative overflow-hidden rounded-2xl px-4 py-3.5"
+          style={{ background: "linear-gradient(135deg, #eef2ff 0%, #e8e0ff 50%, #dbeafe 100%)" }}
         >
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10">
-              <Sparkles className="h-5 w-5 text-indigo-500" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-[15px] font-bold text-gray-900">
-                让 AI 为你定制旅行
+          <div className="flex items-center justify-between">
+            <div className="flex-1 pr-2">
+              <h3 className="text-[14px] font-bold text-indigo-900">
+                让 AI 为你生成专属旅行灵感
               </h3>
-              <p className="mt-1 text-[12px] leading-relaxed text-gray-500">
-                告诉我们你的偏好，智能生成专属路线
+              <p className="mt-0.5 text-[10px] text-indigo-400">
+                告诉我们你喜欢的风景、活动和节奏
               </p>
             </div>
+            {/* Robot illustration area */}
+            <div className="relative mr-1 flex items-center">
+              <div className="mr-2 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 text-[20px] shadow-md">
+                🤖
+              </div>
+              <Link
+                to="/quiz"
+                className="pressable shrink-0 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-[12px] font-bold text-white shadow-md transition active:scale-95"
+              >
+                去定制
+              </Link>
+            </div>
           </div>
-          <Link
-            to="/quiz"
-            className="pressable mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 text-[14px] font-bold text-white shadow-lg transition active:scale-[0.98]"
-          >
-            开始定制 <ArrowRight className="h-4 w-4" />
+        </div>
+      </section>
+
+      {/* ═══ Bottom theme row — 3 items matching mockup ═══ */}
+      <section className="mx-4 mt-4 mb-2">
+        <div className="flex items-center justify-around rounded-2xl bg-white py-3 shadow-sm">
+          <Link to="/explore" search={{ cat: "nature" }} className="flex items-center gap-1.5 text-[12px] font-semibold text-gray-700">
+            <Flame className="h-4 w-4 text-orange-500" />
+            热门灵感
+          </Link>
+          <Link to="/explore" search={{ cat: "outdoor" }} className="flex items-center gap-1.5 text-[12px] font-semibold text-gray-700">
+            <Compass className="h-4 w-4 text-gray-500" />
+            小众秘境
+          </Link>
+          <Link to="/explore" className="flex items-center gap-1.5 text-[12px] font-semibold text-gray-700">
+            <Snowflake className="h-4 w-4 text-blue-500" />
+            季节限定
           </Link>
         </div>
       </section>
 
-      <div className="h-4" />
       <BottomNav />
     </div>
   );
