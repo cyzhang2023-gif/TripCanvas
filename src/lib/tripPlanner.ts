@@ -1967,7 +1967,12 @@ function getPremiumExploreRoutes(destination: string): ExploreRoute[] {
 }
 
 export function getExploreRoutes(destination: string): ExploreRoute[] {
-  return getPremiumExploreRoutes(destination);
+  const exact = getPremiumExploreRoutes(destination);
+  if (exact.length > 0) return exact;
+  const key = Object.keys(exploreDB).find(
+    (k) => destination.includes(k) || k.includes(destination),
+  );
+  return key ? getPremiumExploreRoutes(key) : [];
 }
 
 export function getAllDestinations(): string[] {

@@ -8,7 +8,7 @@ import {
 import { useMemo, useState } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { useFeaturedRoutes, useTripActions, type SourceKind } from "@/lib/tripStore";
-import heroImg from "@/assets/hero-santorini.jpg";
+import heroImg from "@/assets/hero-santorini-blue.png";
 import tokyoImg from "@/assets/tokyo-sakura.jpg";
 import maldivesImg from "@/assets/maldives.jpg";
 import chiangmaiImg from "@/assets/chiangmai.jpg";
@@ -64,10 +64,10 @@ const categories = [
 ];
 
 const calendar = [
-  { month: "5月", title: "北海道薰衣草季", date: "5–7月", img: lavenderImg, color: "from-violet-400 to-purple-500" },
-  { month: "6月", title: "欧洲音乐节季", date: "6–8月", img: festivalImg, color: "from-pink-400 to-rose-500" },
-  { month: "7月", title: "夏威夷冲浪季", date: "7–9月", img: surfImg, color: "from-cyan-400 to-teal-500" },
-  { month: "8月", title: "北极观鲸季", date: "8–10月", img: whaleImg, color: "from-amber-400 to-orange-500" },
+  { month: "5月", title: "北海道薰衣草季", date: "5–7月", img: lavenderImg, color: "from-violet-400 to-purple-500", dest: "北海道" },
+  { month: "6月", title: "欧洲音乐节季", date: "6–8月", img: festivalImg, color: "from-pink-400 to-rose-500", dest: "西班牙" },
+  { month: "7月", title: "夏威夷冲浪季", date: "7–9月", img: surfImg, color: "from-cyan-400 to-teal-500", dest: "夏威夷" },
+  { month: "8月", title: "北极观鲸季", date: "8–10月", img: whaleImg, color: "from-amber-400 to-orange-500", dest: "冰岛" },
 ];
 
 const staticCommunity = [
@@ -156,35 +156,35 @@ function Index() {
           设计思路: iPhone 14 可视844px，300px hero + 工具栏后
           用户首屏就能看到"灵感地图"的顶部，产生继续滑的欲望 */}
       <section className="relative h-[300px] w-full overflow-hidden">
-        <img src={heroImg} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <img src={heroImg} alt="" className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: "75% 60%" }} />
         <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(0,0,0,0.15) 0%, transparent 35%, rgba(0,0,0,0.55) 100%)" }} />
 
         {/* top bar */}
-        <div className="relative z-10 flex items-center justify-end gap-2 px-4 pt-[env(safe-area-inset-top,44px)]">
-          <div className="flex items-center gap-1 rounded-full bg-white/20 backdrop-blur-md px-2 py-[3px] text-white text-[10px] font-medium">
+        <div className="relative z-10 flex items-center justify-end gap-3 px-5 pt-[calc(env(safe-area-inset-top,44px)+4px)]">
+          <div className="flex items-center gap-1 rounded-full bg-white/20 backdrop-blur-md px-3 py-1 text-white text-[11px] font-medium">
             <MapPin className="h-3 w-3" /> 圣托里尼
           </div>
-          <button className="relative grid place-items-center h-7 w-7 rounded-full bg-white/20 backdrop-blur-md text-white">
-            <Bell className="h-3 w-3" />
-            <span className="absolute top-0.5 right-1 h-1.5 w-1.5 rounded-full bg-rose-500" />
+          <button className="relative grid place-items-center h-8 w-8 rounded-full bg-white/20 backdrop-blur-md text-white">
+            <Bell className="h-3.5 w-3.5" />
+            <span className="absolute top-1 right-1.5 h-1.5 w-1.5 rounded-full bg-rose-500" />
           </button>
-          <img src={avatarUser} alt="" className="h-7 w-7 rounded-full object-cover ring-[1.5px] ring-white/50" />
+          <img src={avatarUser} alt="" className="h-8 w-8 rounded-full object-cover ring-2 ring-white/40" />
         </div>
 
-        {/* headline — 紧凑但有气势 */}
-        <div className="relative z-10 px-5 mt-3 text-white">
-          <h1 className="text-[28px] leading-[1.15] font-bold tracking-tight drop-shadow-md">
+        {/* headline */}
+        <div className="relative z-10 px-5 mt-5 text-white">
+          <h1 className="text-[30px] leading-[1.2] font-extrabold tracking-tight drop-shadow-md">
             世界很大<br />
-            <span className="inline-flex items-center gap-1">去看看吧 <Sparkles className="h-5 w-5 text-amber-200" /></span>
+            <span className="inline-flex items-center gap-1.5">去看看吧 <Sparkles className="h-5 w-5 text-amber-200" /></span>
           </h1>
-          <p className="mt-1.5 text-[11px] text-white/85 tracking-wide">发现灵感 · 规划行程 · 无忧出发</p>
+          <p className="mt-2 text-[12px] text-white/80 tracking-wider font-light">发现灵感 · 规划行程 · 无忧出发</p>
         </div>
 
         {/* search + tags — 贴底 */}
         <div className="absolute inset-x-4 bottom-3 z-10">
           <div className="flex items-center gap-1.5 rounded-full bg-white shadow-lg pl-3 pr-1 py-[3px]">
             <Search className="h-3.5 w-3.5 text-gray-400 shrink-0" />
-            <input placeholder="想去哪儿? 粘贴小红书链接 / 搜索目的地"
+            <input placeholder="想去哪儿? 搜索目的地 / 景点 / 攻略 / 行程"
               className="flex-1 bg-transparent text-[11px] py-1.5 outline-none placeholder:text-gray-400 min-w-0"
               value={content} onChange={(e) => setContent(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") submitHero(); }} />
@@ -221,9 +221,9 @@ function Index() {
           <div className="flex-1 grid grid-cols-3">
             {tools.map(({ icon: Icon, label, sub, color, action }) => (
               <button key={label} type="button" onClick={() => {
-                if (action === "budget") nav({ to: "/quiz" });
+                if (action === "budget") nav({ to: "/budget" });
                 if (action === "import") setShowImport(true);
-                if (action === "food") nav({ to: "/destinations" });
+                if (action === "food") nav({ to: "/food-map" });
               }} className="flex flex-col items-center gap-[3px]">
                 <div className={`grid place-items-center h-10 w-10 rounded-xl bg-gradient-to-br ${color} text-white`}>
                   <Icon className="h-[18px] w-[18px]" />
@@ -262,11 +262,8 @@ function Index() {
             </div>
             <MapPin className="h-3 w-3 text-primary" />
           </div>
-          <div className="relative h-[130px] mt-1">
-            <div className="absolute inset-0 opacity-20" style={{
-              backgroundImage: "radial-gradient(circle, oklch(0.7 0.04 260) 0.8px, transparent 0.8px)",
-              backgroundSize: "5px 5px",
-            }} />
+          <div className="relative h-[105px] mt-1">
+            <img src="/world-map-simple.svg" alt="" className="absolute inset-0 h-full w-full object-contain opacity-[0.55]" />
             {inspoMap.map((p) => (
               <div key={p.name} className="absolute flex flex-col items-center" style={{ top: p.top, left: p.left, transform: "translate(-50%,-50%)" }}>
                 <img src={p.img} alt="" className="h-[22px] w-[22px] rounded-full object-cover ring-[1.5px] ring-white shadow-sm" />
@@ -299,7 +296,7 @@ function Index() {
               : seasonal.map(s => ({ ...s }))
             ).map(s => (
               <Link key={s.title} to="/explore" search={{ dest: (s as any).dest || "" }}
-                className="relative shrink-0 w-[88px] aspect-[3/4] rounded-xl overflow-hidden block">
+                className="relative shrink-0 w-[88px] aspect-[4/5] rounded-xl overflow-hidden block">
                 <img src={s.img} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
                 <span className="absolute top-1.5 left-1 text-[6px] font-bold px-1 py-[2px] rounded text-white" style={{ background: s.tagColor }}>{s.tag}</span>
@@ -347,28 +344,27 @@ function Index() {
           <h2 className="text-[13px] font-bold">旅行日历</h2>
           <span className="text-[8px] text-muted-foreground">未来3个月的最佳旅行时机</span>
         </div>
-        {/* timeline */}
-        <div className="mt-1.5 flex items-center px-1">
-          {calendar.map((c, i) => (
-            <div key={c.month} className="flex-1 flex items-center">
-              <div className="flex flex-col items-start gap-[2px]">
-                <span className={`text-[9px] font-bold bg-gradient-to-r ${c.color} bg-clip-text text-transparent leading-none`}>{c.month}</span>
-                <span className={`h-[5px] w-[5px] rounded-full bg-gradient-to-r ${c.color}`} />
-              </div>
-              {i < calendar.length - 1 && <div className={`flex-1 h-[1.5px] mx-1 bg-gradient-to-r ${c.color} opacity-35 rounded-full`} />}
-            </div>
-          ))}
-        </div>
         <div className="mt-1.5 flex gap-1.5 overflow-x-auto no-scrollbar">
-          {calendar.map(c => (
-            <div key={c.title} className="relative shrink-0 w-[120px] h-[64px] rounded-xl overflow-hidden shadow-sm">
-              <img src={c.img} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
-              <div className="absolute bottom-1.5 left-1.5 right-1.5 text-white">
-                <p className="text-[10px] font-bold leading-tight">{c.title}</p>
-                <p className="text-[7px] opacity-85 mt-[1px]">{c.date}</p>
+          {calendar.map((c, i) => (
+            <Link key={c.title} to="/explore" search={{ dest: c.dest }} className="shrink-0 w-[120px] block">
+              {/* timeline dot + line */}
+              <div className="flex items-center mb-1 h-4">
+                <div className="flex flex-col items-start gap-[2px]">
+                  <span className={`text-[9px] font-bold bg-gradient-to-r ${c.color} bg-clip-text text-transparent leading-none`}>{c.month}</span>
+                  <span className={`h-[5px] w-[5px] rounded-full bg-gradient-to-r ${c.color}`} />
+                </div>
+                {i < calendar.length - 1 && <div className={`flex-1 h-[1.5px] ml-1 bg-gradient-to-r ${c.color} opacity-35 rounded-full`} />}
               </div>
-            </div>
+              {/* card */}
+              <div className="relative w-full h-[64px] rounded-xl overflow-hidden shadow-sm">
+                <img src={c.img} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
+                <div className="absolute bottom-1.5 left-1.5 right-1.5 text-white">
+                  <p className="text-[10px] font-bold leading-tight">{c.title}</p>
+                  <p className="text-[7px] opacity-85 mt-[1px]">{c.date}</p>
+                </div>
+              </div>
+            </Link>
           ))}
           <button className="shrink-0 grid place-items-center w-6 rounded-full bg-card shadow-sm">
             <ChevronRight className="h-3 w-3 text-muted-foreground" />

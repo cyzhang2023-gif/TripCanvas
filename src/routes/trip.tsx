@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
-import { TripMapView, amapNavUrl, type TripMapHandle } from "@/components/AMapView";
+import { TripMapView, amapNavUrl, googleMapsNavUrl, appleMapsNavUrl, type TripMapHandle } from "@/components/AMapView";
 import { BottomNav } from "@/components/BottomNav";
 import { DAY_COLORS } from "@/lib/constants";
 import {
@@ -74,12 +74,29 @@ const currencyPatterns: [RegExp, string][] = [
   [/¥|元|人民币|RMB|CNY/i, "¥"],
 ];
 
-function detectCurrency(price?: string): string {
-  if (!price) return "¥";
+const countryToCurrency: Record<string, string> = {
+  日本: "JPY ", japan: "JPY ",
+  韩国: "₩", "south korea": "₩", korea: "₩",
+  泰国: "฿", thailand: "฿",
+  中国: "¥", china: "¥",
+  美国: "$", "united states": "$", usa: "$",
+  法国: "€", france: "€", 德国: "€", germany: "€", 意大利: "€", italy: "€", 西班牙: "€", spain: "€",
+  英国: "£", "united kingdom": "£", uk: "£",
+  新加坡: "S$", singapore: "S$",
+  澳大利亚: "A$", australia: "A$",
+  菲律宾: "₱", philippines: "₱",
+};
+
+function detectCurrency(price?: string, country?: string): string {
+  if (!price) {
+    if (country) return countryToCurrency[country.toLowerCase()] ?? countryToCurrency[country] ?? "¥";
+    return "¥";
+  }
   for (const [re, sym] of currencyPatterns) {
     if (re.test(price)) return sym;
   }
-  return "¥"; // default
+  if (country) return countryToCurrency[country.toLowerCase()] ?? countryToCurrency[country] ?? "¥";
+  return "¥";
 }
 
 function parsePrice(price?: string): number {
@@ -96,24 +113,28 @@ function parsePrice(price?: string): number {
 }
 
 function formatCurrency(n: number, sym = "¥"): string {
-  // For JPY-style yen, strip the "(JPY)" for display
-  const display = sym.replace("(JPY)", "");
+  const display = sym.replace("(JPY)", "").trim();
+  const isJPY = sym.includes("JPY") || sym.includes("(JPY)");
+  if (isJPY) {
+    if (n >= 10000) return `¥${(n / 10000).toFixed(1)}万(JPY)`;
+    return `¥${n.toLocaleString()}(JPY)`;
+  }
   if (sym === "¥" && n >= 10000) return `${display}${(n / 10000).toFixed(1)}万`;
+  if (sym === "₩" && n >= 10000) return `${display}${(n / 10000).toFixed(1)}만`;
   return `${display}${n.toLocaleString()}`;
 }
 
 type BudgetResult = { total: number; breakdown: Record<string, number>; currency: string };
 
-function dayBudget(spots: Spot[]): BudgetResult {
+function dayBudget(spots: Spot[], country?: string): BudgetResult {
   const breakdown: Record<string, number> = {};
   let total = 0;
-  // Detect dominant currency from first spot with price
-  let currency = "¥";
+  let currency = country ? (countryToCurrency[country.toLowerCase()] ?? countryToCurrency[country] ?? "¥") : "¥";
   let detected = false;
   for (const s of spots) {
     const p = parsePrice(s.price);
     if (p > 0) {
-      if (!detected) { currency = detectCurrency(s.price); detected = true; }
+      if (!detected) { currency = detectCurrency(s.price, country); detected = true; }
       const cat = s.category ?? "其他";
       breakdown[cat] = (breakdown[cat] ?? 0) + p;
       total += p;
@@ -366,7 +387,7 @@ function Trip() {
       {detailSpot && <SpotModal spot={detailSpot} onClose={() => setDetailSpot(null)} />}
 
       {/* Budget popup */}
-      {showBudget && <BudgetPopup days={trip.days} onClose={() => setShowBudget(false)} />}
+      {showBudget && <BudgetPopup days={trip.days} country={trip.country} onClose={() => setShowBudget(false)} />}
 
       <BottomNav />
     </div>
@@ -415,7 +436,7 @@ const typeLabel: Record<string, string> = { solo: "独行", couple: "情侣", fa
 const paceLabel: Record<string, string> = { relaxed: "慢节奏", normal: "适中", fast: "暴走" };
 
 function TripMetaBar({ trip }: { trip: TripType }) {
-  const tripCover = trip.coverUrl || coverUrl(trip.cover);
+  const tripCover = trip.coverUrl || coverUrl(trip.cover, trip.country, trip.destination);
   return (
     <div className="mx-3 mb-2 overflow-hidden rounded-2xl bg-white px-3.5 py-3 shadow-sm">
       <div className="flex gap-3">
@@ -637,6 +658,46 @@ function SpotModal({ spot, onClose }: { spot: Spot; onClose: () => void }) {
             </div>
           )}
 
+          {/* Payment methods */}
+          {spot.payment && spot.payment.length > 0 && (
+            <div className="mt-3.5">
+              <p className="mb-1.5 text-[11px] font-semibold text-white/50">支付方式</p>
+              <div className="flex flex-wrap gap-1.5">
+                {spot.payment.map((p) => (
+                  <span key={p} className="rounded-full border border-emerald-400/30 bg-emerald-400/15 px-2.5 py-0.5 text-[10px] font-medium text-emerald-300">
+                    {p}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Backup plan */}
+          {spot.backup && (
+            <div className="mt-3 rounded-xl border border-blue-400/20 bg-blue-400/10 px-3 py-2">
+              <p className="text-[11px] font-semibold text-blue-300">☂ 天气备选</p>
+              <p className="mt-0.5 text-[12px] text-blue-200">{spot.backup}</p>
+            </div>
+          )}
+
+          {/* XHS / Dianping links */}
+          {(spot.xhsUrl || spot.dpUrl) && (
+            <div className="mt-3 flex gap-2.5">
+              {spot.xhsUrl && (
+                <a href={spot.xhsUrl} target="_blank" rel="noreferrer"
+                  className="flex items-center gap-1.5 rounded-xl bg-red-500/15 px-3 py-2 text-[11px] font-semibold text-red-300 transition active:scale-[0.97]">
+                  <span className="text-[14px]">📕</span> 小红书攻略
+                </a>
+              )}
+              {spot.dpUrl && (
+                <a href={spot.dpUrl} target="_blank" rel="noreferrer"
+                  className="flex items-center gap-1.5 rounded-xl bg-orange-500/15 px-3 py-2 text-[11px] font-semibold text-orange-300 transition active:scale-[0.97]">
+                  <span className="text-[14px]">⭐</span> 大众点评
+                </a>
+              )}
+            </div>
+          )}
+
           {/* Photo gallery — click to swap hero image */}
           {gallery.length > 1 && (
             <div className="no-scrollbar -mx-5 mt-4 flex gap-2.5 overflow-x-auto px-5">
@@ -662,23 +723,30 @@ function SpotModal({ spot, onClose }: { spot: Spot; onClose: () => void }) {
             </div>
           )}
 
-          {/* Action buttons — nav + bookmark */}
-          <div className="mt-5 flex items-stretch gap-3">
-            <a
-              href={amapNavUrl(spot)}
-              target="_blank"
-              rel="noreferrer"
-              className="flex flex-1 items-center justify-center gap-2 rounded-2xl py-3.5 text-[14px] font-bold text-white shadow-lg transition active:scale-[0.98]"
-              style={{ background: "linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%)" }}
-            >
-              <Navigation className="h-4 w-4" /> 在高德地图中导航
-            </a>
-            <button
-              className="flex w-16 flex-col items-center justify-center gap-0.5 rounded-2xl bg-white/8 text-white/70 active:bg-white/12"
-            >
-              <Heart className="h-4 w-4" />
-              <span className="text-[10px]">收藏</span>
-            </button>
+          {/* Navigation options */}
+          <div className="mt-5">
+            <p className="mb-2 text-[11px] font-semibold text-white/50">选择导航</p>
+            <div className="flex gap-2.5">
+              <a href={amapNavUrl(spot)} target="_blank" rel="noreferrer"
+                className="flex flex-1 flex-col items-center gap-1 rounded-2xl bg-blue-500/15 py-3 text-white transition active:scale-[0.97]">
+                <Navigation className="h-5 w-5 text-blue-400" />
+                <span className="text-[11px] font-semibold">高德地图</span>
+              </a>
+              <a href={googleMapsNavUrl(spot)} target="_blank" rel="noreferrer"
+                className="flex flex-1 flex-col items-center gap-1 rounded-2xl bg-green-500/15 py-3 text-white transition active:scale-[0.97]">
+                <MapPin className="h-5 w-5 text-green-400" />
+                <span className="text-[11px] font-semibold">Google Maps</span>
+              </a>
+              <a href={appleMapsNavUrl(spot)} target="_blank" rel="noreferrer"
+                className="flex flex-1 flex-col items-center gap-1 rounded-2xl bg-slate-400/15 py-3 text-white transition active:scale-[0.97]">
+                <MapPin className="h-5 w-5 text-slate-300" />
+                <span className="text-[11px] font-semibold">Apple Maps</span>
+              </a>
+              <button className="flex w-14 flex-col items-center justify-center gap-1 rounded-2xl bg-white/8 text-white/70 active:bg-white/12">
+                <Heart className="h-4 w-4" />
+                <span className="text-[10px]">收藏</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -765,22 +833,21 @@ function DonutChart({ segments, size = 120 }: { segments: { color: string; value
 }
 
 /* ─── Budget popup (redesigned) ─── */
-function BudgetPopup({ days, onClose }: { days: Day[]; onClose: () => void }) {
+function BudgetPopup({ days, country, onClose }: { days: Day[]; country?: string; onClose: () => void }) {
   const [expandedDay, setExpandedDay] = useState<number | null>(null);
 
   const { grandTotal, perDay, tripCurrency } = useMemo(() => {
     let grandTotal = 0;
     const currencyCount: Record<string, number> = {};
     const perDay = days.map((day) => {
-      const b = dayBudget(day.spots);
+      const b = dayBudget(day.spots, country);
       grandTotal += b.total;
       if (b.total > 0) currencyCount[b.currency] = (currencyCount[b.currency] ?? 0) + b.total;
       return { label: day.label, ...b };
     });
-    // Use the currency with the most total value
     const tripCurrency = Object.entries(currencyCount).sort(([, a], [, b]) => b - a)[0]?.[0] ?? "¥";
     return { grandTotal, perDay, tripCurrency };
-  }, [days]);
+  }, [days, country]);
 
   const catTotals: Record<string, number> = {};
   for (const d of perDay) {
@@ -1236,6 +1303,32 @@ function SpotCard({
         {spot.desc && (
           <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{spot.desc}</p>
         )}
+        {/* Payment chips */}
+        {spot.payment && spot.payment.length > 0 && (
+          <div className="mt-1 flex flex-wrap gap-1">
+            {spot.payment.map((p) => (
+              <span key={p} className="rounded-full bg-emerald-50 px-1.5 py-px text-[8px] font-medium text-emerald-700">
+                {p}
+              </span>
+            ))}
+          </div>
+        )}
+        {/* Backup & links row */}
+        <div className="mt-0.5 flex flex-wrap items-center gap-2">
+          {spot.backup && (
+            <span className="text-[9px] text-blue-500" title={`备选：${spot.backup}`}>
+              ☂ 备选: {spot.backup}
+            </span>
+          )}
+          {spot.xhsUrl && (
+            <a href={spot.xhsUrl} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}
+              className="text-[9px] font-medium text-red-400 hover:underline">小红书</a>
+          )}
+          {spot.dpUrl && (
+            <a href={spot.dpUrl} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}
+              className="text-[9px] font-medium text-orange-400 hover:underline">大众点评</a>
+          )}
+        </div>
       </div>
 
       {/* Right side: photo + nav */}

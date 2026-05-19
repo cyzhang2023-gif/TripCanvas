@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { BottomNav } from "@/components/BottomNav";
+import { Img } from "@/components/Img";
 import { coverUrl, useTripActions, useTripsQuery, type Trip } from "@/lib/tripStore";
 
 export const Route = createFileRoute("/my-trips")({
@@ -105,11 +106,12 @@ function TripCard({ trip }: { trip: Trip }) {
   return (
     <article className="relative overflow-hidden rounded-[18px] shadow-[0_10px_26px_rgba(38,43,70,.10)]">
       {/* Full background image */}
-      <img
-        src={trip.coverUrl || coverUrl(trip.cover)}
+      <Img
+        src={trip.coverUrl || coverUrl(trip.cover, trip.country, trip.destination)}
         alt={trip.name}
         loading="lazy"
-        className="absolute inset-0 h-full w-full object-cover"
+        wrapperClass="absolute inset-0"
+        className="h-full w-full object-cover"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-black/10" />
 

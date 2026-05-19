@@ -1,8 +1,24 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
-import maplibregl from "maplibre-gl";
-import "maplibre-gl/dist/maplibre-gl.css";
 import type { Day, Spot, TravelInfo } from "@/lib/tripTypes";
 import { DAY_COLORS } from "@/lib/constants";
+
+type MapLibreGL = typeof import("maplibre-gl");
+let _mlgl: MapLibreGL | null = null;
+let _mlglPromise: Promise<MapLibreGL> | null = null;
+
+function loadMapLibre(): Promise<MapLibreGL> {
+  if (_mlgl) return Promise.resolve(_mlgl);
+  if (!_mlglPromise) {
+    _mlglPromise = Promise.all([
+      import("maplibre-gl"),
+      import("maplibre-gl/dist/maplibre-gl.css"),
+    ]).then(([mod]) => {
+      _mlgl = mod;
+      return mod;
+    });
+  }
+  return _mlglPromise;
+}
 
 type Coordinate = { lat: number; lng: number };
 type TravelInfoByDay = Record<string, Record<string, TravelInfo>>;
@@ -57,7 +73,7 @@ function visiblePoints(days: Day[], focusDay: number | null, travelInfoByDay: Tr
   );
 }
 
-function getBounds(points: Coordinate[]): maplibregl.LngLatBoundsLike | null {
+function getBounds(points: Coordinate[]): [[number, number], [number, number]] | null {
   if (points.length === 0) return null;
   const lats = points.map((p) => p.lat);
   const lngs = points.map((p) => p.lng);
@@ -271,37 +287,58 @@ export const TripMapView = forwardRef<
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [daysKey, tripId]);
 
-  // Initialize MapLibre map
+  const [mapLoading, setMapLoading] = useState(true);
+  const mlglRef = useRef<MapLibreGL | null>(null);
+
+  // Initialize MapLibre map (dynamic import)
   useEffect(() => {
     if (useSketchMap || typeof window === "undefined" || !containerRef.current) return;
 
     let dead = false;
-    const map = new maplibregl.Map({
-      container: containerRef.current,
-      style: MAP_STYLE,
-      center: [139.77, 35.68], // Default: Tokyo
-      zoom: 11,
-      attributionControl: false,
-    });
+    setMapLoading(true);
 
-    map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
+    loadMapLibre()
+      .then((ml) => {
+        if (dead || !containerRef.current) return;
+        mlglRef.current = ml;
 
-    map.on("load", () => {
-      if (dead) return;
-      mapRef.current = map;
-      setMapReady(true);
-    });
+        const map = new ml.Map({
+          container: containerRef.current,
+          style: MAP_STYLE,
+          center: [139.77, 35.68],
+          zoom: 11,
+          attributionControl: false,
+        });
 
-    map.on("error", () => {
-      if (dead) return;
-      setUseSketchMap(true);
-    });
+        map.addControl(new ml.AttributionControl({ compact: true }), "bottom-right");
+
+        map.on("load", () => {
+          if (dead) return;
+          mapRef.current = map;
+          setMapReady(true);
+          setMapLoading(false);
+        });
+
+        map.on("error", () => {
+          if (dead) return;
+          setUseSketchMap(true);
+          setMapLoading(false);
+        });
+      })
+      .catch(() => {
+        if (!dead) {
+          setUseSketchMap(true);
+          setMapLoading(false);
+        }
+      });
 
     return () => {
       dead = true;
       setMapReady(false);
-      map.remove();
-      mapRef.current = null;
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
     };
   }, [useSketchMap]);
 
@@ -366,6 +403,8 @@ export const TripMapView = forwardRef<
       }
 
       // Add markers
+      const ml = mlglRef.current;
+      if (!ml) return;
       day.spots.filter(hasCoordinate).forEach((spot, spotIndex) => {
         globalIndex += 1;
         const label = focusDay != null ? spotIndex + 1 : globalIndex;
@@ -377,7 +416,7 @@ export const TripMapView = forwardRef<
             onSpotClick(spot, dayIndex);
           });
         }
-        const marker = new maplibregl.Marker({ element: el, anchor: "bottom" })
+        const marker = new ml.Marker({ element: el, anchor: "bottom" })
           .setLngLat([spot.lng, spot.lat])
           .addTo(map);
         markersRef.current.push(marker);
@@ -421,10 +460,17 @@ export const TripMapView = forwardRef<
   }
 
   return (
-    <div
-      ref={containerRef}
-      className={`overflow-hidden rounded-2xl ${height} ${className}`}
-    />
+    <div className={`relative overflow-hidden rounded-2xl ${height} ${className}`}>
+      <div ref={containerRef} className="h-full w-full" />
+      {mapLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-[#eef3f4]">
+          <div className="flex flex-col items-center gap-2">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <span className="text-[10px] text-muted-foreground">地图加载中...</span>
+          </div>
+        </div>
+      )}
+    </div>
   );
 });
 
@@ -457,4 +503,16 @@ export function amapSearchUrl(spot: Spot) {
   return spot.lat != null && spot.lng != null
     ? `https://uri.amap.com/marker?position=${spot.lng},${spot.lat}&name=${encodeURIComponent(spot.title)}`
     : `https://uri.amap.com/search?keyword=${encodeURIComponent(spot.title)}`;
+}
+
+export function googleMapsNavUrl(spot: Spot) {
+  return spot.lat != null && spot.lng != null
+    ? `https://www.google.com/maps/dir/?api=1&destination=${spot.lat},${spot.lng}&destination_place_id=&travelmode=walking`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(spot.title)}`;
+}
+
+export function appleMapsNavUrl(spot: Spot) {
+  return spot.lat != null && spot.lng != null
+    ? `https://maps.apple.com/?daddr=${spot.lat},${spot.lng}&dirflg=w&t=m`
+    : `https://maps.apple.com/?q=${encodeURIComponent(spot.title)}`;
 }

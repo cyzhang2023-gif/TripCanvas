@@ -4,7 +4,7 @@ import { BookOpen, Calendar, Compass, Home, Map, Plus, User, type LucideIcon } f
 type BottomNavVariant = "global" | "china";
 
 type NavItem = {
-  to: "/" | "/destinations" | "/my-trips";
+  to: "/" | "/destinations" | "/my-trips" | "/profile";
   icon: LucideIcon;
   label: string;
 };
@@ -17,13 +17,13 @@ export function BottomNav({ variant = "global" }: { variant?: BottomNavVariant }
         { to: "/", icon: Home, label: "首页" },
         { to: "/destinations", icon: Map, label: "地图" },
         { to: "/my-trips", icon: Calendar, label: "行程" },
-        { to: "/my-trips", icon: User, label: "我的" },
+        { to: "/profile", icon: User, label: "我的" },
       ]
     : [
         { to: "/", icon: Compass, label: "Explore" },
         { to: "/destinations", icon: BookOpen, label: "Discover" },
         { to: "/my-trips", icon: Calendar, label: "Trips" },
-        { to: "/my-trips", icon: User, label: "Profile" },
+        { to: "/profile", icon: User, label: "Profile" },
       ];
 
   const item = ({ to, icon: Icon, label }: NavItem) => {

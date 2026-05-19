@@ -106,7 +106,7 @@ function computeViews(ar: number): Record<string, ViewState> {
     };
   }
   return {
-    "全部": { scale: S0, left: (100 - MAP_CANVAS_W * S0) / 2, top: (100 - CANVAS_H * S0 * ar) / 2 },
+    "全部": { scale: S0, left: (100 - MAP_CANVAS_W * S0) / 2, top: (100 - CANVAS_H * S0 * ar) / 2 - 12 },
     "亚洲": view(78, 42, S1),
     "欧洲": view(51, 21, S1),
     "北美洲": view(20, 32, S1),

@@ -1,7 +1,7 @@
 import "./lib/error-capture";
 
 import { parseWithAI, generateQuizTrip } from "./lib/ai";
-import type { QuizAnswers } from "./lib/ai";
+import type { QuizAnswers, StreamProgress } from "./lib/ai";
 import { getDayTravelInfo, type TravelInfo } from "./lib/amap-api";
 import {
   importPayloadSchema,
@@ -44,6 +44,7 @@ type ImportJobState = {
   tripId?: string;
   error?: string;
   steps: Array<{ label: string; state: "done" | "active" | "pending" }>;
+  streamInfo?: string;
 };
 
 const importJobs = new TTLCache<string, ImportJobState>({ maxSize: 200, ttlMs: 10 * 60 * 1000 });
@@ -98,7 +99,9 @@ async function resolveXhsShortLink(shortUrl: string): Promise<XhsNoteRef | null>
   }
 }
 
-async function fetchXhsViaTikHub(noteUrl: string): Promise<string | null> {
+type XhsNoteContent = { title: string; desc: string; tags: string[]; raw: string; images: string[] };
+
+async function fetchXhsViaTikHub(noteUrl: string): Promise<XhsNoteContent | null> {
   const apiKey = process.env.TIKHUB_API_KEY;
   if (!apiKey) {
     console.log("[XHS] No TIKHUB_API_KEY configured, skipping TikHub fetch");
@@ -123,7 +126,7 @@ async function fetchXhsViaTikHub(noteUrl: string): Promise<string | null> {
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
-        signal: AbortSignal.timeout(15_000),
+        signal: AbortSignal.timeout(8_000),
       },
     );
 
@@ -152,6 +155,15 @@ async function fetchXhsViaTikHub(noteUrl: string): Promise<string | null> {
       .map((t: any) => t?.name || t?.topic_name || t)
       .filter((t: any) => typeof t === "string" && t.length > 0);
 
+    // Extract note images (high-res)
+    const imagesList = noteData.images_list || noteData.image_list || [];
+    const images: string[] = imagesList
+      .map((img: any) => img?.url_size_large || img?.url || img?.original || "")
+      .filter((u: string) => u.startsWith("http"));
+    if (images.length > 0) {
+      console.log(`[XHS] Extracted ${images.length} note images`);
+    }
+
     const parts = [
       title && `标题: ${title}`,
       desc && `内容: ${desc}`,
@@ -161,7 +173,7 @@ async function fetchXhsViaTikHub(noteUrl: string): Promise<string | null> {
 
     if (result.length > 20) {
       console.log(`[XHS] TikHub extracted: "${title}" (${desc.length} chars)`);
-      return result;
+      return { title, desc, tags, raw: result, images };
     }
     return null;
   } catch (err) {
@@ -179,6 +191,7 @@ function makeJobResponse(job: ImportJobState) {
     tripId: job.status === "done" ? job.tripId : undefined,
     error: job.error,
     steps: job.steps,
+    streamInfo: job.streamInfo,
   };
 }
 
@@ -204,6 +217,40 @@ function updateJobProgress(
   }
 }
 
+function buildXhsHintedContent(note: XhsNoteContent, city?: string, country?: string): string {
+  const dest = city || "";
+  const ctry = country || "";
+  const hint = dest || ctry
+    ? `⚠️ 重要：本笔记的目的地是「${dest}」（${ctry}），你必须生成关于「${dest}」的行程，禁止生成其他城市的行程！`
+    : `⚠️ 重要：请从以下笔记内容中提取真实目的地，禁止替换为其他城市！`;
+  return `来源: 小红书笔记\n${hint}\n\n标题：${note.title}\n\n${note.raw}\n\n标签：${note.tags.join(", ")}`;
+}
+
+/** Fire n8n webhook in background (saves to explore DB, does not block user) */
+function fireN8nWebhookAsync(note: XhsNoteContent) {
+  const n8nUrl = process.env.N8N_WEBHOOK_URL || "http://127.0.0.1:5678/webhook/xhs-parse";
+  fetch(n8nUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      title: note.title,
+      desc: note.desc,
+      tags: note.tags.join(", "),
+      source_url: "",
+    }),
+    signal: AbortSignal.timeout(90_000),
+  })
+    .then(async (resp) => {
+      if (resp.ok) {
+        const text = await resp.text();
+        console.log(`[XHS→n8n] Background save done (${text.length} chars)`);
+      } else {
+        console.log(`[XHS→n8n] Background webhook returned ${resp.status}`);
+      }
+    })
+    .catch((err) => console.log(`[XHS→n8n] Background webhook failed: ${(err as Error).message}`));
+}
+
 /** Process import job asynchronously with real AI */
 async function processImportJob(job: ImportJobState, env: unknown, ownerId: string) {
   try {
@@ -212,17 +259,17 @@ async function processImportJob(job: ImportJobState, env: unknown, ownerId: stri
     let aiContent = job.content;
     let aiKind = job.kind;
 
+    let xhsNote: XhsNoteContent | null = null;
     if (XHS_URL_RE.test(job.content)) {
       const noteUrl = extractXhsUrl(job.content);
       if (noteUrl) {
-        const fetched = await fetchXhsViaTikHub(noteUrl);
-        if (fetched) {
-          aiContent = `来源: 小红书笔记\n\n${fetched}`;
+        xhsNote = await fetchXhsViaTikHub(noteUrl);
+        if (xhsNote) {
+          aiContent = `来源: 小红书笔记\n\n${xhsNote.raw}`;
           aiKind = "text";
         }
       }
-      // Fallback to share text if Playwright didn't work
-      if (aiContent === job.content) {
+      if (!xhsNote && aiContent === job.content) {
         const shareText = extractXhsShareText(job.content);
         if (shareText) {
           console.log(`[Import] Fallback to XHS share text: "${shareText.slice(0, 60)}..."`);
@@ -232,11 +279,36 @@ async function processImportJob(job: ImportJobState, env: unknown, ownerId: stri
       }
     }
 
-    // Step 2: AI parsing
-    updateJobProgress(job, 1, 30);
-    const trip = await parseWithAI(aiKind, aiContent);
+    // Step 2: AI parsing with streaming progress
+    updateJobProgress(job, 1, 20);
+    const onProgress = (p: StreamProgress) => {
+      if (p.phase === "connecting") {
+        job.streamInfo = "正在连接 AI...";
+        job.progress = 20;
+      } else if (p.phase === "generating") {
+        const parts: string[] = [];
+        if (p.destination) parts.push(`目的地：${p.destination}`);
+        if (p.daysFound > 0) parts.push(`${p.daysFound} 天行程`);
+        if (p.spotsFound > 0) parts.push(`${p.spotsFound} 个景点`);
+        job.streamInfo = parts.length > 0 ? `已识别 ${parts.join("、")}` : "AI 正在生成行程...";
+        job.progress = Math.min(20 + Math.floor(p.spotsFound * 2), 65);
+      } else if (p.phase === "parsing") {
+        job.streamInfo = "正在解析行程数据...";
+        job.progress = 68;
+      }
+    };
+    let trip: Trip;
+    if (xhsNote) {
+      fireN8nWebhookAsync(xhsNote);
+      const hinted = buildXhsHintedContent(xhsNote);
+      console.log(`[Import] Parsing XHS note via DeepSeek (n8n saving in background)...`);
+      trip = await parseWithAI("text", hinted, onProgress);
+    } else {
+      trip = await parseWithAI(aiKind, aiContent, onProgress);
+    }
 
     // Step 3: Geocoding (already done inside parseWithAI)
+    job.streamInfo = "正在定位景点坐标...";
     updateJobProgress(job, 2, 70);
 
     // Step 4: Optimize routes
@@ -252,15 +324,25 @@ async function processImportJob(job: ImportJobState, env: unknown, ownerId: stri
     console.log(`[Import] Job ${job.id} completed → trip "${optimized.name}"`);
   } catch (err) {
     console.error(`[Import] Job ${job.id} failed:`, err);
-    // Fallback to keyword-based matching
     try {
-      console.log(`[Import] Falling back to keyword-based matching...`);
-      const fallbackTrip = createTripFromImport({ kind: job.kind, content: job.content });
-      const repository = await getTripRepository(env);
-      await repository.saveUserTrip(fallbackTrip, ownerId);
-      job.tripId = fallbackTrip.id;
-      updateJobProgress(job, 4, 100, "done");
-      console.log(`[Import] Fallback succeeded → trip "${fallbackTrip.name}"`);
+      if (xhsNote) {
+        console.log(`[Import] AI failed for XHS note, retrying parseWithAI with strong hints...`);
+        const hinted = buildXhsHintedContent(xhsNote);
+        const retryTrip = await parseWithAI("text", hinted);
+        const repository = await getTripRepository(env);
+        await repository.saveUserTrip(optimizeTrip(retryTrip), ownerId);
+        job.tripId = retryTrip.id;
+        updateJobProgress(job, 4, 100, "done");
+        console.log(`[Import] XHS retry succeeded → trip "${retryTrip.name}"`);
+      } else {
+        console.log(`[Import] Falling back to keyword-based matching...`);
+        const fallbackTrip = createTripFromImport({ kind: job.kind, content: job.content });
+        const repository = await getTripRepository(env);
+        await repository.saveUserTrip(fallbackTrip, ownerId);
+        job.tripId = fallbackTrip.id;
+        updateJobProgress(job, 4, 100, "done");
+        console.log(`[Import] Fallback succeeded → trip "${fallbackTrip.name}"`);
+      }
     } catch (fallbackErr) {
       job.status = "error";
       job.error = err instanceof Error ? err.message : "解析失败";
@@ -276,19 +358,140 @@ const travelCache = new TTLCache<string, { data: Record<string, TravelInfo>; ts:
   ttlMs: 30 * 60 * 1000,
 });
 
-/* ─── Spot image cache (Wikipedia) ─── */
+/* ─── Spot image cache ─── */
 const spotImageCache = new TTLCache<string, string>({ maxSize: 1000, ttlMs: 60 * 60 * 1000 });
 
-/** Fetch a high-quality spot image from Bing China (returns images from Ctrip, Qunar, etc.) */
-/**
- * Fetch ranked image URLs from Bing CN for a query.
- * Returns an array of safe, deduplicated image URLs sorted by preference.
- */
+function getUnsplashKey(): string {
+  if (typeof process !== "undefined" && process.env?.UNSPLASH_ACCESS_KEY) {
+    return process.env.UNSPLASH_ACCESS_KEY;
+  }
+  const env = import.meta.env as Record<string, string | undefined>;
+  return env.UNSPLASH_ACCESS_KEY ?? "";
+}
+
+function getPexelsKey(): string {
+  if (typeof process !== "undefined" && process.env?.PEXELS_API_KEY) {
+    return process.env.PEXELS_API_KEY;
+  }
+  const env = import.meta.env as Record<string, string | undefined>;
+  return env.PEXELS_API_KEY ?? "";
+}
+
+async function fetchPexelsImage(query: string): Promise<string | null> {
+  const key = getPexelsKey();
+  if (!key) return null;
+  try {
+    const params = new URLSearchParams({ query, per_page: "1", orientation: "landscape" });
+    const res = await fetch(`https://api.pexels.com/v1/search?${params}`, {
+      headers: { Authorization: key },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) {
+      if (res.status === 429) console.warn("[Image] Pexels rate limit reached");
+      return null;
+    }
+    const data = (await res.json()) as { photos: Array<{ src: { large: string } }> };
+    const url = data.photos?.[0]?.src?.large;
+    if (url) {
+      console.log(`[Image] Pexels: "${query}" → found`);
+      return url;
+    }
+  } catch (err) {
+    console.error(`[Image] Pexels fetch failed for "${query}":`, err);
+  }
+  return null;
+}
+
+async function fetchPexelsImages(query: string, count = 5): Promise<string[]> {
+  const key = getPexelsKey();
+  if (!key) return [];
+  try {
+    const params = new URLSearchParams({ query, per_page: String(count), orientation: "landscape" });
+    const res = await fetch(`https://api.pexels.com/v1/search?${params}`, {
+      headers: { Authorization: key },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return [];
+    const data = (await res.json()) as { photos: Array<{ src: { large: string } }> };
+    return (data.photos || []).map((p) => p.src.large).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+interface UnsplashResult {
+  urls: { regular: string; small: string };
+  description: string | null;
+}
+
+async function fetchUnsplashImage(query: string): Promise<string | null> {
+  const key = getUnsplashKey();
+  if (!key) return null;
+
+  try {
+    const params = new URLSearchParams({
+      query,
+      per_page: "1",
+      orientation: "landscape",
+      content_filter: "high",
+    });
+    const res = await fetch(`https://api.unsplash.com/search/photos?${params}`, {
+      headers: { Authorization: `Client-ID ${key}` },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) {
+      if (res.status === 403) console.warn("[Image] Unsplash rate limit reached");
+      return null;
+    }
+    const data = (await res.json()) as { results: UnsplashResult[] };
+    const url = data.results?.[0]?.urls?.regular;
+    if (url) {
+      console.log(`[Image] Unsplash: "${query}" → found`);
+      return url;
+    }
+  } catch (err) {
+    console.error(`[Image] Unsplash fetch failed for "${query}":`, err);
+  }
+  return null;
+}
+
+async function fetchUnsplashImages(query: string, count = 5): Promise<string[]> {
+  const key = getUnsplashKey();
+  if (!key) return [];
+
+  try {
+    const params = new URLSearchParams({
+      query,
+      per_page: String(count),
+      orientation: "landscape",
+      content_filter: "high",
+    });
+    const res = await fetch(`https://api.unsplash.com/search/photos?${params}`, {
+      headers: { Authorization: `Client-ID ${key}` },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return [];
+    const data = (await res.json()) as { results: UnsplashResult[] };
+    return (data.results || []).map((r) => r.urls.regular).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function buildImageSearchQuery(query: string): string {
+  const q = query.toLowerCase();
+  // Detect category from query content and add appropriate suffix
+  if (/酒店|住宿|民宿|hostel|hotel|旅馆|青旅/.test(q)) return `${query} 酒店外观 实拍`;
+  if (/美食|餐厅|餐馆|小吃|咖啡|奶茶|酒吧|料理|拉面|寿司|烤肉/.test(q)) return `${query} 美食实拍`;
+  if (/购物|商场|商店|市场|免税|百货/.test(q)) return `${query} 购物`;
+  if (/机场|车站|地铁|交通|码头/.test(q)) return `${query} 实拍`;
+  if (/海滩|沙滩|海岛|beach/.test(q)) return `${query} 海滩风景`;
+  if (/寺|庙|神社|教堂|清真寺|temple|shrine/.test(q)) return `${query} 实景`;
+  return `${query} 旅游实拍`;
+}
+
 async function fetchBingImages(query: string): Promise<string[]> {
-  const categoryHints = ["美食", "餐厅", "餐馆", "小吃", "咖啡", "酒吧", "购物", "商场", "酒店", "住宿", "民宿", "interior", "food", "restaurant", "hotel", "shop"];
-  const hasCategory = categoryHints.some((h) => query.toLowerCase().includes(h));
-  const searchQuery = hasCategory ? query : `${query} 风景 景点`;
-  // Request more results for gallery support
+  const searchQuery = buildImageSearchQuery(query);
   const url = `https://cn.bing.com/images/async?q=${encodeURIComponent(searchQuery)}&first=0&count=20&mmasync=1`;
 
   try {
@@ -672,13 +875,27 @@ async function validateImageUrl(url: string): Promise<boolean> {
   } catch { return false; }
 }
 
-/** Resolve AND validate a cover image URL — tries multiple candidates */
+/** Resolve AND validate a cover image URL — Unsplash → Bing → Wikipedia */
 async function resolveValidCoverUrl(query: string): Promise<string> {
   const cached = validatedCoverCache.get(query);
   if (cached && Date.now() - cached.ts < COVER_CACHE_TTL) return cached.url;
 
-  // Try Bing search — get multiple candidates from the raw Bing results
-  const searchQuery = `${query} 风景 景点`;
+  // Primary: Unsplash
+  const unsplashUrl = await fetchUnsplashImage(query);
+  if (unsplashUrl) {
+    validatedCoverCache.set(query, { url: unsplashUrl, ts: Date.now() });
+    return unsplashUrl;
+  }
+
+  // Secondary: Pexels
+  const pexelsUrl = await fetchPexelsImage(query);
+  if (pexelsUrl) {
+    validatedCoverCache.set(query, { url: pexelsUrl, ts: Date.now() });
+    return pexelsUrl;
+  }
+
+  // Tertiary: Bing search
+  const searchQuery = buildImageSearchQuery(query);
   const bingApiUrl = `https://cn.bing.com/images/async?q=${encodeURIComponent(searchQuery)}&first=0&count=12&mmasync=1`;
   try {
     const res = await fetch(bingApiUrl, {
@@ -701,7 +918,6 @@ async function resolveValidCoverUrl(query: string): Promise<string> {
           .map((m) => m.replace('murl&quot;:&quot;', ''))
           .filter((u) => u.startsWith("https://") && !blockedHosts.some((h) => u.includes(h)));
 
-        // Try up to 4 candidates with HEAD validation
         for (const candidate of candidates.slice(0, 4)) {
           if (await validateImageUrl(candidate)) {
             console.log(`[CoverResolve] "${query}" → ${candidate.slice(0, 80)} (validated)`);
@@ -713,15 +929,15 @@ async function resolveValidCoverUrl(query: string): Promise<string> {
     }
   } catch { /* continue to next source */ }
 
-  // Try Wikipedia
+  // Tertiary: Wikipedia
   const wikiUrl = await fetchWikipediaImage(query);
   if (wikiUrl && await validateImageUrl(wikiUrl)) {
     validatedCoverCache.set(query, { url: wikiUrl, ts: Date.now() });
     return wikiUrl;
   }
 
-  // Ultimate fallback — Unsplash source redirect (reliable, always works)
-  const fallback = `https://source.unsplash.com/800x600/?${encodeURIComponent(query)}`;
+  // Ultimate fallback
+  const fallback = FALLBACK_IMAGES[fallbackIdx++ % FALLBACK_IMAGES.length];
   validatedCoverCache.set(query, { url: fallback, ts: Date.now() });
   return fallback;
 }
@@ -792,11 +1008,12 @@ function n8nRouteToTrip(route: Record<string, unknown>, days: Record<string, unk
   };
 }
 
-function apiJson(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "content-type": "application/json; charset=utf-8" },
-  });
+function apiJson(data: unknown, status = 200, cacheSeconds = 0): Response {
+  const headers: Record<string, string> = { "content-type": "application/json; charset=utf-8" };
+  if (cacheSeconds > 0) {
+    headers["cache-control"] = `public, max-age=${cacheSeconds}, stale-while-revalidate=${cacheSeconds * 2}`;
+  }
+  return new Response(JSON.stringify(data), { status, headers });
 }
 
 function apiError(status: number, message: string): Response {
@@ -915,7 +1132,7 @@ async function handleApiRequest(request: Request, env: unknown): Promise<Respons
       q: url.searchParams.get("q") ?? undefined,
       days: url.searchParams.get("days") ? Number(url.searchParams.get("days")) : undefined,
     };
-    return apiJson(await repository.listPublicRoutes(filters));
+    return apiJson(await repository.listPublicRoutes(filters), 200, 60);
   }
 
   /* ─── Import with real AI ─── */
@@ -1032,56 +1249,83 @@ async function handleApiRequest(request: Request, env: unknown): Promise<Respons
     const batchKey = `__batch__${query}__${count}`;
     const cachedBatch = spotImageCache.get(batchKey);
     if (cachedBatch) {
-      return apiJson(JSON.parse(cachedBatch));
+      return apiJson(JSON.parse(cachedBatch), 200, 3600);
     }
 
-    const bingResults = await fetchBingImages(query);
-    const results = bingResults.slice(0, count);
+    // Primary: Unsplash
+    const unsplashResults = await fetchUnsplashImages(query, count);
+    const results = unsplashResults.slice(0, count);
 
-    // If not enough from Bing, try Wikipedia as supplement
+    // Supplement with Pexels
     if (results.length < count) {
-      const wikiUrl = await fetchWikipediaImage(query);
-      if (wikiUrl && !results.includes(wikiUrl)) results.push(wikiUrl);
+      const pexelsResults = await fetchPexelsImages(query, count - results.length);
+      for (const u of pexelsResults) {
+        if (results.length >= count) break;
+        if (!results.includes(u)) results.push(u);
+      }
     }
 
-    // Fill remaining with fallback
+    // Supplement with Bing
+    if (results.length < count) {
+      const bingResults = await fetchBingImages(query);
+      for (const u of bingResults) {
+        if (results.length >= count) break;
+        if (!results.includes(u)) results.push(u);
+      }
+    }
+
     while (results.length < count) {
       results.push(getCategoryFallback(query));
     }
 
     spotImageCache.set(batchKey, JSON.stringify(results));
-    return apiJson(results);
+    return apiJson(results, 200, 3600);
   }
 
-  /* ─── Spot image — Bing CN (Ctrip/Qunar CDN) with Wikipedia fallback ─── */
+  /* ─── Spot image — Unsplash → Bing CN → Wikipedia fallback ─── */
   if (pathname === "/api/spot-image" && request.method === "GET") {
     const query = url.searchParams.get("q") ?? "";
     if (!query) return apiError(400, "缺少搜索词");
 
-    // Check cache
+    const imgRedirect = (targetUrl: string) =>
+      new Response(null, {
+        status: 302,
+        headers: {
+          location: targetUrl,
+          "cache-control": "public, max-age=86400, stale-while-revalidate=604800",
+        },
+      });
+
     const cachedUrl = spotImageCache.get(query);
     if (cachedUrl) {
-      return Response.redirect(cachedUrl, 302);
+      return imgRedirect(cachedUrl);
     }
 
-    // Primary: Bing China (returns Ctrip/Qunar/Mafengwo CDN images, fast in China)
+    // Primary: Unsplash
+    const unsplashUrl = await fetchUnsplashImage(query);
+    if (unsplashUrl) {
+      spotImageCache.set(query, unsplashUrl);
+      return imgRedirect(unsplashUrl);
+    }
+
+    // Secondary: Pexels
+    const pexelsUrl = await fetchPexelsImage(query);
+    if (pexelsUrl) {
+      spotImageCache.set(query, pexelsUrl);
+      return imgRedirect(pexelsUrl);
+    }
+
+    // Tertiary: Bing China
     const bingUrl = await fetchBingImage(query);
     if (bingUrl) {
       spotImageCache.set(query, bingUrl);
-      return Response.redirect(bingUrl, 302);
-    }
-
-    // Secondary: Wikipedia (for international spots)
-    const wikiUrl = await fetchWikipediaImage(query);
-    if (wikiUrl) {
-      spotImageCache.set(query, wikiUrl);
-      return Response.redirect(wikiUrl, 302);
+      return imgRedirect(bingUrl);
     }
 
     // Fallback: curated landscape image
     const fallback = getCategoryFallback(query);
     spotImageCache.set(query, fallback);
-    return Response.redirect(fallback, 302);
+    return imgRedirect(fallback);
   }
 
   /* All destinations grouped by region — dynamically from n8n DB, cached for 30 min */
@@ -1090,7 +1334,7 @@ async function handleApiRequest(request: Request, env: unknown): Promise<Respons
     const DEST_CACHE_KEY = "__destinations_response__";
     const destCached = validatedCoverCache.get(DEST_CACHE_KEY);
     if (destCached && Date.now() - destCached.ts < 30 * 60_000) {
-      return apiJson(JSON.parse(destCached.url));
+      return apiJson(JSON.parse(destCached.url), 200, 300);
     }
 
     try {
@@ -1200,14 +1444,14 @@ async function handleApiRequest(request: Request, env: unknown): Promise<Respons
         if (groups.length > 0) {
           // Cache the full response for 30 minutes
           validatedCoverCache.set(DEST_CACHE_KEY, { url: JSON.stringify(groups), ts: Date.now() });
-          return apiJson(groups);
+          return apiJson(groups, 200, 300);
         }
       }
     } catch (err) {
       console.error("[destinations] DB query failed, falling back to hardcoded:", err);
     }
 
-    return apiJson(getDestinationsByRegion());
+    return apiJson(getDestinationsByRegion(), 200, 300);
   }
 
   /* Explore routes per destination (merge hardcoded + n8n DB routes) */
@@ -1229,10 +1473,10 @@ async function handleApiRequest(request: Request, env: unknown): Promise<Respons
           LEFT JOIN itinerary_days d ON d.route_id = r.id
           LEFT JOIN itinerary_places ip ON ip.day_id = d.id
           WHERE r.status = 'published'
-            ${dest ? "AND (r.destination = $1 OR r.city = $1 OR r.country = $1)" : ""}
+            ${dest ? "AND (r.destination ILIKE '%' || $1 || '%' OR r.city ILIKE '%' || $1 || '%' OR r.country ILIKE '%' || $1 || '%' OR $1 ILIKE '%' || r.destination || '%' OR $1 ILIKE '%' || r.city || '%' OR $1 ILIKE '%' || r.country || '%')" : ""}
           GROUP BY r.id
           ORDER BY r.quality_score DESC, r.created_at DESC
-          LIMIT ${dest ? "20" : "60"}
+          LIMIT ${dest ? "30" : "100"}
         `;
         const n8nRes = await pool.query(n8nSql, dest ? [dest] : []);
         // Track per-city index to assign different covers for same-city routes
@@ -1268,8 +1512,9 @@ async function handleApiRequest(request: Request, env: unknown): Promise<Respons
       console.warn("[n8n explore] Failed to fetch n8n routes:", e);
     }
 
-    // Merge: n8n routes first (higher quality AI content), then hardcoded
-    return apiJson([...n8nExplore, ...hardcoded]);
+    // Use n8n routes only if available, fall back to hardcoded for destinations with no n8n data
+    if (n8nExplore.length > 0) return apiJson(n8nExplore, 200, 60);
+    return apiJson(hardcoded, 200, 120);
   }
 
   /* Add an explore route to user's trips */
@@ -1424,7 +1669,7 @@ async function handleApiRequest(request: Request, env: unknown): Promise<Respons
         ),
       };
     });
-    return apiJson(rows);
+    return apiJson(rows, 200, 120);
   }
 
   /* ─── n8n route detail (with days + places, converted to Trip format) ─── */

@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Bell, ChevronRight, Globe, Loader2, MapPin, Search, ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { BottomNav } from "@/components/BottomNav";
+import { Img } from "@/components/Img";
 import { useDestinations } from "@/lib/tripStore";
 
 export const Route = createFileRoute("/destinations")({
@@ -92,7 +93,7 @@ function Destinations() {
                 return (
                   <div>
                     <div className="relative overflow-hidden rounded-2xl h-[160px] shadow-md">
-                      <img src={d.cover} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                      <Img src={d.cover} alt={d.name} wrapperClass="absolute inset-0" className="h-full w-full object-cover" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
                       <span className="absolute top-2.5 right-2.5 rounded-full bg-white/20 backdrop-blur-md text-white text-[9px] font-semibold px-2 py-[3px]">
                         全部 {d.routes}+
@@ -126,8 +127,8 @@ function Destinations() {
                   {group.destinations.map((d) => (
                     <Link key={d.name} to="/explore" search={{ dest: d.name }}
                       className="relative overflow-hidden rounded-xl h-[96px] shadow-sm group">
-                      <img src={d.cover} alt="" loading="lazy"
-                        className="absolute inset-0 h-full w-full object-cover transition-transform group-active:scale-105" />
+                      <Img src={d.cover} alt={d.name} loading="lazy"
+                        wrapperClass="absolute inset-0" className="h-full w-full object-cover transition-transform group-active:scale-105" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
                       <div className="absolute bottom-2 left-2">
                         <p className="text-[13px] font-bold text-white drop-shadow-md leading-none">{d.name}</p>
@@ -146,8 +147,8 @@ function Destinations() {
                   {group.destinations.map((d) => (
                     <Link key={d.name} to="/explore" search={{ dest: d.name }}
                       className="relative overflow-hidden rounded-lg h-[80px] shadow-sm group">
-                      <img src={d.cover} alt="" loading="lazy"
-                        className="absolute inset-0 h-full w-full object-cover transition-transform group-active:scale-105" />
+                      <Img src={d.cover} alt={d.name} loading="lazy"
+                        wrapperClass="absolute inset-0" className="h-full w-full object-cover transition-transform group-active:scale-105" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
                       <div className="absolute bottom-1.5 left-1.5">
                         <p className="text-[10px] font-bold text-white drop-shadow-sm leading-none">{d.name}</p>

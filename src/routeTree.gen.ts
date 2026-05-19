@@ -12,12 +12,15 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TripRouteImport } from './routes/trip'
 import { Route as ShareRouteImport } from './routes/share'
 import { Route as QuizRouteImport } from './routes/quiz'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ParsingRouteImport } from './routes/parsing'
 import { Route as MyTripsRouteImport } from './routes/my-trips'
 import { Route as InspirationRouteImport } from './routes/inspiration'
 import { Route as ImportRouteImport } from './routes/import'
+import { Route as FoodMapRouteImport } from './routes/food-map'
 import { Route as ExploreRouteImport } from './routes/explore'
 import { Route as DestinationsRouteImport } from './routes/destinations'
+import { Route as BudgetRouteImport } from './routes/budget'
 import { Route as IndexRouteImport } from './routes/index'
 
 const TripRoute = TripRouteImport.update({
@@ -33,6 +36,11 @@ const ShareRoute = ShareRouteImport.update({
 const QuizRoute = QuizRouteImport.update({
   id: '/quiz',
   path: '/quiz',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ParsingRoute = ParsingRouteImport.update({
@@ -55,6 +63,11 @@ const ImportRoute = ImportRouteImport.update({
   path: '/import',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FoodMapRoute = FoodMapRouteImport.update({
+  id: '/food-map',
+  path: '/food-map',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ExploreRoute = ExploreRouteImport.update({
   id: '/explore',
   path: '/explore',
@@ -65,6 +78,11 @@ const DestinationsRoute = DestinationsRouteImport.update({
   path: '/destinations',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BudgetRoute = BudgetRouteImport.update({
+  id: '/budget',
+  path: '/budget',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -73,24 +91,30 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/budget': typeof BudgetRoute
   '/destinations': typeof DestinationsRoute
   '/explore': typeof ExploreRoute
+  '/food-map': typeof FoodMapRoute
   '/import': typeof ImportRoute
   '/inspiration': typeof InspirationRoute
   '/my-trips': typeof MyTripsRoute
   '/parsing': typeof ParsingRoute
+  '/profile': typeof ProfileRoute
   '/quiz': typeof QuizRoute
   '/share': typeof ShareRoute
   '/trip': typeof TripRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/budget': typeof BudgetRoute
   '/destinations': typeof DestinationsRoute
   '/explore': typeof ExploreRoute
+  '/food-map': typeof FoodMapRoute
   '/import': typeof ImportRoute
   '/inspiration': typeof InspirationRoute
   '/my-trips': typeof MyTripsRoute
   '/parsing': typeof ParsingRoute
+  '/profile': typeof ProfileRoute
   '/quiz': typeof QuizRoute
   '/share': typeof ShareRoute
   '/trip': typeof TripRoute
@@ -98,12 +122,15 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/budget': typeof BudgetRoute
   '/destinations': typeof DestinationsRoute
   '/explore': typeof ExploreRoute
+  '/food-map': typeof FoodMapRoute
   '/import': typeof ImportRoute
   '/inspiration': typeof InspirationRoute
   '/my-trips': typeof MyTripsRoute
   '/parsing': typeof ParsingRoute
+  '/profile': typeof ProfileRoute
   '/quiz': typeof QuizRoute
   '/share': typeof ShareRoute
   '/trip': typeof TripRoute
@@ -112,36 +139,45 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/budget'
     | '/destinations'
     | '/explore'
+    | '/food-map'
     | '/import'
     | '/inspiration'
     | '/my-trips'
     | '/parsing'
+    | '/profile'
     | '/quiz'
     | '/share'
     | '/trip'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/budget'
     | '/destinations'
     | '/explore'
+    | '/food-map'
     | '/import'
     | '/inspiration'
     | '/my-trips'
     | '/parsing'
+    | '/profile'
     | '/quiz'
     | '/share'
     | '/trip'
   id:
     | '__root__'
     | '/'
+    | '/budget'
     | '/destinations'
     | '/explore'
+    | '/food-map'
     | '/import'
     | '/inspiration'
     | '/my-trips'
     | '/parsing'
+    | '/profile'
     | '/quiz'
     | '/share'
     | '/trip'
@@ -149,12 +185,15 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BudgetRoute: typeof BudgetRoute
   DestinationsRoute: typeof DestinationsRoute
   ExploreRoute: typeof ExploreRoute
+  FoodMapRoute: typeof FoodMapRoute
   ImportRoute: typeof ImportRoute
   InspirationRoute: typeof InspirationRoute
   MyTripsRoute: typeof MyTripsRoute
   ParsingRoute: typeof ParsingRoute
+  ProfileRoute: typeof ProfileRoute
   QuizRoute: typeof QuizRoute
   ShareRoute: typeof ShareRoute
   TripRoute: typeof TripRoute
@@ -181,6 +220,13 @@ declare module '@tanstack/react-router' {
       path: '/quiz'
       fullPath: '/quiz'
       preLoaderRoute: typeof QuizRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/parsing': {
@@ -211,6 +257,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ImportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/food-map': {
+      id: '/food-map'
+      path: '/food-map'
+      fullPath: '/food-map'
+      preLoaderRoute: typeof FoodMapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/explore': {
       id: '/explore'
       path: '/explore'
@@ -225,6 +278,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DestinationsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/budget': {
+      id: '/budget'
+      path: '/budget'
+      fullPath: '/budget'
+      preLoaderRoute: typeof BudgetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -237,12 +297,15 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BudgetRoute: BudgetRoute,
   DestinationsRoute: DestinationsRoute,
   ExploreRoute: ExploreRoute,
+  FoodMapRoute: FoodMapRoute,
   ImportRoute: ImportRoute,
   InspirationRoute: InspirationRoute,
   MyTripsRoute: MyTripsRoute,
   ParsingRoute: ParsingRoute,
+  ProfileRoute: ProfileRoute,
   QuizRoute: QuizRoute,
   ShareRoute: ShareRoute,
   TripRoute: TripRoute,

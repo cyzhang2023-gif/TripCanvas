@@ -22,6 +22,7 @@ import {
 import { useMemo, useState } from "react";
 import { z } from "zod";
 import { BottomNav } from "@/components/BottomNav";
+import { Img } from "@/components/Img";
 import { useExploreRoutes, useTripActions, type ExploreRoute } from "@/lib/tripStore";
 
 const unsplash = (id: string, w = 600) =>
@@ -212,17 +213,17 @@ function ExplorePage() {
   return (
     <main className="app-shell pb-[94px] text-[#1d2029]">
       {/* ═══ Hero ═══ */}
-      <section className="relative overflow-hidden" style={{ height: 220 }}>
-        <img src={heroImg} alt="" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/5 to-black/55" />
+      <section className="relative overflow-hidden" style={{ height: 260 }}>
+        <Img src={heroImg} alt="目的地" wrapperClass="absolute inset-0" className="h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/25 to-black/70" />
 
-        <div className="relative z-10 flex h-full flex-col px-4 pt-5 text-white">
+        <div className="relative z-10 flex h-full flex-col px-4 pt-[env(safe-area-inset-top,44px)] text-white">
           {/* Nav buttons */}
           <div className="flex items-center justify-between">
             <button
               type="button"
               onClick={() => (window.history.length > 1 ? window.history.back() : nav({ to: "/" }))}
-              className="pressable flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-[#20232c] shadow-sm backdrop-blur"
+              className="pressable flex h-9 w-9 items-center justify-center rounded-full bg-black/30 text-white shadow-sm backdrop-blur-sm"
             >
               <ChevronLeft className="h-4 w-4" strokeWidth={2.5} />
             </button>
@@ -230,14 +231,14 @@ function ExplorePage() {
               <button
                 type="button"
                 onClick={share}
-                className="pressable flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-[#20232c] shadow-sm backdrop-blur"
+                className="pressable flex h-9 w-9 items-center justify-center rounded-full bg-black/30 text-white shadow-sm backdrop-blur-sm"
               >
                 <Share2 className="h-3.5 w-3.5" strokeWidth={2.5} />
               </button>
               <button
                 type="button"
                 onClick={() => setShowMenu(!showMenu)}
-                className="pressable flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-[#20232c] shadow-sm backdrop-blur"
+                className="pressable flex h-9 w-9 items-center justify-center rounded-full bg-black/30 text-white shadow-sm backdrop-blur-sm"
               >
                 <MoreHorizontal className="h-4 w-4" strokeWidth={2.5} />
               </button>
@@ -269,23 +270,23 @@ function ExplorePage() {
           </div>
 
           {/* Title area */}
-          <div className="mt-auto pb-5">
-            <h1 className="flex items-center gap-1.5 text-[20px] font-extrabold leading-tight">
+          <div className="mt-auto pb-6">
+            <h1 className="flex items-center gap-2 text-[24px] font-extrabold leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)]">
               {dest ? `${dest} · 热门路线` : (categories.find((c) => c.key === cat)?.label ?? "热门路线")}
-              <Flame className="h-4 w-4 text-[#ff7a45]" fill="#ff7a45" />
+              <MapPin className="h-5 w-5 text-[#8b7aff]" fill="#8b7aff" strokeWidth={2.5} />
             </h1>
-            <p className="mt-1 text-[11px] text-white/85">
-              官方来源核验 · 精品路线覆盖餐厅、酒店、购物和休闲
+            <p className="mt-1.5 text-[12px] text-white/90 drop-shadow-[0_1px_4px_rgba(0,0,0,0.3)]">
+              来自小红书、知乎、马蜂窝等平台的热门攻略
             </p>
-            <div className="mt-2 flex items-center justify-end gap-2">
-              <span className="text-[10px] text-white/85">21.3万人收藏</span>
+            <div className="mt-3 flex items-center justify-end gap-2">
+              <span className="text-[11px] font-medium text-white/90">21.3万人收藏</span>
               <div className="flex -space-x-1.5">
                 {localGuides.slice(0, 4).map((g) => (
                   <img
                     key={g.handle}
                     src={g.avatar}
                     alt=""
-                    className="h-5 w-5 rounded-full border-[1.5px] border-white object-cover"
+                    className="h-6 w-6 rounded-full border-[1.5px] border-white object-cover shadow-sm"
                   />
                 ))}
               </div>
@@ -459,7 +460,7 @@ function RouteCard({
   return (
     <article className="grid grid-cols-[30%_1fr] gap-2 rounded-[16px] bg-white pr-1 shadow-[0_8px_24px_rgba(38,43,70,.08)]">
       <div className="relative h-[104px] overflow-hidden rounded-[16px]">
-        <img src={route.cover} alt="" className="h-full w-full object-cover" />
+        <Img src={route.cover} alt={route.title} wrapperClass="h-full w-full" className="h-full w-full object-cover" />
         <span className="absolute left-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#5b45f3] shadow-sm">
           {rank}
         </span>
@@ -485,7 +486,7 @@ function RouteCard({
             {route.tags.slice(0, 4).map((t) => (
               <span
                 key={t}
-                className="rounded-full bg-[#f3f1ff] px-2 py-[2px] text-[9px] font-bold text-[#6554e8]"
+                className={`rounded-full px-2 py-[2px] text-[9px] font-bold ${t === "小红书精选" ? "bg-gradient-to-r from-[#ff2442] to-[#ff6075] text-white" : "bg-[#f3f1ff] text-[#6554e8]"}`}
               >
                 {t}
               </span>

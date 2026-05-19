@@ -6,6 +6,17 @@ import korea from "@/assets/dest-korea.jpg";
 import thailand from "@/assets/dest-thailand.jpg";
 import france from "@/assets/dest-france.jpg";
 import mapBg from "@/assets/map-bg.jpg";
+import grandCanyon from "@/assets/grand-canyon.jpg";
+import aurora from "@/assets/aurora.jpg";
+import safari from "@/assets/safari.jpg";
+import maldivesImg from "@/assets/maldives.jpg";
+import amalfi from "@/assets/amalfi.jpg";
+import santorini from "@/assets/hero-santorini.jpg";
+import lijiang from "@/assets/lijiang.jpg";
+import swissTrain from "@/assets/swiss-train.jpg";
+import sydney from "@/assets/sydney.jpg";
+import cappadocia from "@/assets/cappadocia.jpg";
+import machuPicchu from "@/assets/machu-picchu.jpg";
 import type {
   CoverKey,
   Day,
@@ -48,6 +59,47 @@ const covers: Record<CoverKey, string> = {
   thailand,
   france,
   map: mapBg,
+  usa: grandCanyon,
+  uk: france,
+  egypt: safari,
+  singapore: maldivesImg,
+  iceland: aurora,
+  morocco: cappadocia,
+  italy: amalfi,
+  spain: santorini,
+  china: lijiang,
+  switzerland: swissTrain,
+  australia: sydney,
+  turkey: cappadocia,
+  maldives: maldivesImg,
+  peru: machuPicchu,
+};
+
+const countryToCover: Record<string, CoverKey> = {
+  日本: "japan", 东京: "tokyo", japan: "japan", tokyo: "tokyo",
+  韩国: "korea", korea: "korea",
+  泰国: "thailand", thailand: "thailand", 清迈: "thailand", 曼谷: "thailand", 普吉: "thailand",
+  法国: "france", france: "france", 巴黎: "france",
+  美国: "usa", usa: "usa", 洛杉矶: "usa", 纽约: "usa", 夏威夷: "usa",
+  英国: "uk", uk: "uk", 伦敦: "uk",
+  埃及: "egypt", egypt: "egypt",
+  新加坡: "singapore", singapore: "singapore",
+  冰岛: "iceland", iceland: "iceland",
+  摩洛哥: "morocco", morocco: "morocco",
+  意大利: "italy", italy: "italy",
+  西班牙: "spain", spain: "spain",
+  中国: "china", china: "china", 重庆: "china", 丽江: "china",
+  瑞士: "switzerland", switzerland: "switzerland",
+  澳大利亚: "australia", australia: "australia", 悉尼: "australia",
+  土耳其: "turkey", turkey: "turkey",
+  马尔代夫: "maldives", maldives: "maldives",
+  秘鲁: "peru", peru: "peru",
+  希腊: "spain", greece: "spain",
+  印度尼西亚: "maldives", 巴厘岛: "maldives",
+  越南: "thailand", 柬埔寨: "thailand", 菲律宾: "maldives",
+  加拿大: "usa", 墨西哥: "usa",
+  德国: "france", 荷兰: "france", 挪威: "iceland",
+  阿根廷: "peru", 巴西: "peru", 智利: "peru",
 };
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -74,7 +126,13 @@ function patchTrip(id: string, body: Record<string, unknown>) {
   });
 }
 
-export function coverUrl(cover: CoverKey) {
+export function coverUrl(cover: CoverKey, country?: string, destination?: string) {
+  if (covers[cover] && cover !== "map") return covers[cover];
+  const key = destination?.toLowerCase() ?? "";
+  const ckey = country?.toLowerCase() ?? "";
+  const match = countryToCover[destination ?? ""] ?? countryToCover[country ?? ""]
+    ?? countryToCover[key] ?? countryToCover[ckey];
+  if (match) return covers[match];
   return covers[cover] ?? tokyo;
 }
 
@@ -118,7 +176,7 @@ export function useImportJob(id?: string) {
     queryKey: keys.job(id ?? "missing"),
     queryFn: () => api<ImportJob>(`/api/imports/${id}`),
     enabled: Boolean(id),
-    refetchInterval: 1500,
+    refetchInterval: 800,
   });
 }
 

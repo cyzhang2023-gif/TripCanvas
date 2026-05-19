@@ -8,7 +8,10 @@ export type TripVisibility =
   | "public"
   | "archived"
   | "rejected";
-export type CoverKey = "tokyo" | "japan" | "korea" | "thailand" | "france" | "map";
+export type CoverKey = "tokyo" | "japan" | "korea" | "thailand" | "france" | "map"
+  | "usa" | "uk" | "egypt" | "singapore" | "iceland" | "morocco"
+  | "italy" | "spain" | "china" | "switzerland" | "australia" | "turkey"
+  | "maldives" | "peru";
 export type RouteTheme = "citywalk" | "food" | "beach" | "luxury" | "nature" | "shopping" | "culture";
 export type BudgetLevel = "low" | "medium" | "high";
 export type TravelType = "solo" | "couple" | "family" | "friends";
@@ -38,6 +41,10 @@ export type Spot = {
   tags?: string[];
   address?: string;
   durationMin?: number;
+  payment?: string[];
+  backup?: string;
+  xhsUrl?: string;
+  dpUrl?: string;
 };
 
 export type Day = {
@@ -131,6 +138,7 @@ export type ImportJob = {
   tripId?: string;
   error?: string;
   steps: ImportStep[];
+  streamInfo?: string;
 };
 
 export type TravelInfo = {

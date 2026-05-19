@@ -82,7 +82,7 @@ async function callDeepseek(messages: DeepseekMessage[]): Promise<string> {
       model: "deepseek-chat",
       messages,
       temperature: 0.2,
-      max_tokens: 4096,
+      max_tokens: 8192,
       response_format: hasImage ? undefined : { type: "json_object" },
     }),
   });
@@ -95,6 +95,70 @@ async function callDeepseek(messages: DeepseekMessage[]): Promise<string> {
   const data = (await res.json()) as DeepseekResponse;
   console.log(`[AI] Tokens used: ${data.usage?.total_tokens ?? "?"}`);
   return data.choices[0]?.message?.content ?? "";
+}
+
+/** Stream Deepseek API — calls onChunk with accumulated text as it arrives */
+async function callDeepseekStream(
+  messages: DeepseekMessage[],
+  onChunk: (accumulated: string) => void,
+): Promise<string> {
+  const apiKey = getDeepseekKey();
+  if (!apiKey) throw new Error("未配置 Deepseek API Key");
+
+  const res = await fetch(DEEPSEEK_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "deepseek-chat",
+      messages,
+      temperature: 0.2,
+      max_tokens: 8192,
+      response_format: { type: "json_object" },
+      stream: true,
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Deepseek API error ${res.status}: ${errText}`);
+  }
+
+  const reader = res.body?.getReader();
+  if (!reader) throw new Error("No response body");
+
+  const decoder = new TextDecoder();
+  let accumulated = "";
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith("data: ")) continue;
+      const data = trimmed.slice(6);
+      if (data === "[DONE]") break;
+      try {
+        const parsed = JSON.parse(data) as { choices: Array<{ delta: { content?: string } }> };
+        const chunk = parsed.choices?.[0]?.delta?.content;
+        if (chunk) {
+          accumulated += chunk;
+          onChunk(accumulated);
+        }
+      } catch { /* skip malformed chunks */ }
+    }
+  }
+
+  console.log(`[AI] Stream complete (${accumulated.length} chars)`);
+  return accumulated;
 }
 
 /** Extract base64 image from content if present */
@@ -142,12 +206,53 @@ function normalizeCategory(cat?: string): PoiCategory {
 }
 
 /** Parse AI response into Trip */
+function repairJson(s: string): string {
+  s = s.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, "");
+  s = s.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]");
+  s = s.replace(/}\s*{/g, "},{").replace(/]\s*\[/g, "],[");
+  s = s.replace(/"\s*\n\s*"/g, '", "');
+  // Fix truncated JSON — close unclosed brackets
+  let opens = 0, closesNeeded = "";
+  let inString = false, escape = false;
+  for (const ch of s) {
+    if (escape) { escape = false; continue; }
+    if (ch === "\\") { escape = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === "{" || ch === "[") { opens++; closesNeeded = (ch === "{" ? "}" : "]") + closesNeeded; }
+    if (ch === "}" || ch === "]") { opens--; closesNeeded = closesNeeded.slice(1); }
+  }
+  if (opens > 0) {
+    // Trim trailing partial value (incomplete string/number)
+    s = s.replace(/,\s*"[^"]*$/, "").replace(/,\s*$/, "");
+    s += closesNeeded;
+  }
+  return s;
+}
+
 async function parseAiResponse(raw: string, kind: SourceKind): Promise<Trip> {
   let jsonStr = raw.trim();
   const codeBlockMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (codeBlockMatch) jsonStr = codeBlockMatch[1].trim();
 
-  const parsed: ParsedTrip = JSON.parse(jsonStr);
+  // Extract the outermost JSON object
+  const objMatch = jsonStr.match(/\{[\s\S]*\}/);
+  if (objMatch) jsonStr = objMatch[0];
+
+  let parsed: ParsedTrip;
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch {
+    // Repair and retry
+    const repaired = repairJson(jsonStr);
+    try {
+      parsed = JSON.parse(repaired);
+    } catch {
+      // Nuclear: strip all newlines
+      const nuclear = repairJson(repaired.replace(/\n/g, " ").replace(/\r/g, "").replace(/\t/g, " "));
+      parsed = JSON.parse(nuclear);
+    }
+  }
   const tripId = `ai-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`;
 
   // Flatten all spots across all days for batch processing
@@ -202,6 +307,9 @@ async function parseAiResponse(raw: string, kind: SourceKind): Promise<Trip> {
       category: s.category, intro: s.intro, rating: s.rating,
       price: s.price, tags: s.tags,
       lat: s.lat, lng: s.lng,
+      image: s.imageQuery
+        ? `/api/spot-image?q=${encodeURIComponent(s.imageQuery)}`
+        : `/api/spot-image?q=${encodeURIComponent(s.title)}`,
     }));
     return {
       id: `d${dIdx + 1}`,
@@ -237,10 +345,30 @@ function generateDateRange(totalDays: number): string {
   return `${fmt(start)} — ${fmt(end)}`;
 }
 
+export type StreamProgress = {
+  spotsFound: number;
+  daysFound: number;
+  destination: string;
+  phase: "connecting" | "generating" | "parsing" | "geocoding" | "done";
+};
+
+function extractStreamProgress(text: string): StreamProgress {
+  const spots = (text.match(/"title"\s*:/g) || []).length;
+  const days = (text.match(/"label"\s*:\s*"Day/g) || []).length;
+  const destMatch = text.match(/"destination"\s*:\s*"([^"]+)"/);
+  return {
+    spotsFound: spots,
+    daysFound: days,
+    destination: destMatch?.[1] ?? "",
+    phase: "generating",
+  };
+}
+
 /** Main entry: parse travel content using AI and geocode spots */
 export async function parseWithAI(
   kind: SourceKind,
   content: string,
+  onProgress?: (p: StreamProgress) => void,
 ): Promise<Trip> {
   const hasImage = content.includes("[IMAGE_BASE64]");
   const messages: DeepseekMessage[] = [
@@ -249,12 +377,22 @@ export async function parseWithAI(
   ];
 
   console.log(`[AI] Calling Deepseek for trip parsing (${hasImage ? "with image" : "text only"})...`);
+  onProgress?.({ spotsFound: 0, daysFound: 0, destination: "", phase: "connecting" });
 
   let raw: string;
   try {
-    raw = await callDeepseek(messages);
+    if (onProgress && !hasImage) {
+      let lastUpdate = 0;
+      raw = await callDeepseekStream(messages, (accumulated) => {
+        const now = Date.now();
+        if (now - lastUpdate < 500) return;
+        lastUpdate = now;
+        onProgress(extractStreamProgress(accumulated));
+      });
+    } else {
+      raw = await callDeepseek(messages);
+    }
   } catch (err) {
-    // If multimodal call fails, retry with text-only
     if (hasImage) {
       console.log("[AI] Multimodal call failed, retrying with text only...");
       const { text } = extractImageBase64(content);
@@ -270,6 +408,7 @@ export async function parseWithAI(
   }
 
   console.log("[AI] Got response, parsing...");
+  onProgress?.({ spotsFound: 0, daysFound: 0, destination: "", phase: "parsing" });
   const trip = await parseAiResponse(raw, kind);
   console.log(`[AI] Trip "${trip.name}" created with ${trip.days.length} days`);
 
