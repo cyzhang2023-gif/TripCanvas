@@ -23,6 +23,7 @@ import { useMemo, useState } from "react";
 import { z } from "zod";
 import { BottomNav } from "@/components/BottomNav";
 import { Img } from "@/components/Img";
+import { ExplorePageSkeleton } from "@/components/PageSkeletons";
 import { useExploreRoutes, useTripActions, type ExploreRoute } from "@/lib/tripStore";
 
 const unsplash = (id: string, w = 600) =>
@@ -31,6 +32,7 @@ const unsplash = (id: string, w = 600) =>
 export const Route = createFileRoute("/explore")({
   validateSearch: z.object({ dest: z.string().default(""), cat: z.string().optional() }),
   component: ExplorePage,
+  pendingComponent: ExplorePageSkeleton,
   head: () => ({ meta: [{ title: "Routey · 热门路线" }] }),
 });
 
@@ -285,8 +287,9 @@ function ExplorePage() {
                   <img
                     key={g.handle}
                     src={g.avatar}
-                    alt=""
+                    alt={g.name || "用户头像"}
                     className="h-6 w-6 rounded-full border-[1.5px] border-white object-cover shadow-sm"
+                    loading="lazy"
                   />
                 ))}
               </div>
@@ -396,7 +399,7 @@ function ExplorePage() {
                 style={{ backgroundColor: g.tint }}
               >
                 <span className="relative shrink-0">
-                  <img src={g.avatar} alt="" className="h-8 w-8 rounded-full object-cover" />
+                  <img src={g.avatar} alt={g.name || "达人头像"} className="h-8 w-8 rounded-full object-cover" loading="lazy" />
                   <Check className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-[#5b45f3] p-[1px] text-white" />
                 </span>
                 <span className="min-w-0">

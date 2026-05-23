@@ -649,8 +649,9 @@ function ResultsView({
           {/* Background image */}
           <img
             src={route.cover}
-            alt={route.title}
+            alt={route.title || "路线封面"}
             className="absolute inset-0 h-full w-full object-cover"
+            loading="lazy"
           />
           {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/5" />

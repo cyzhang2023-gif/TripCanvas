@@ -4,10 +4,13 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 
+import { ErrorBoundary } from "../components/ErrorBoundary";
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
@@ -102,12 +105,84 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+function RouteProgressBar() {
+  const isLoading = useRouterState({ select: (s) => s.isLoading });
+
+  if (!isLoading) return null;
+
+  return (
+    <div className="fixed inset-x-0 top-0 z-[9999] h-[3px]">
+      <div
+        className="h-full rounded-r-full"
+        style={{
+          background: "linear-gradient(90deg, #7c6dff, #5b45f3, #4a36ef)",
+          animation: "routey-progress 1.8s ease-in-out infinite",
+        }}
+      />
+      <style>{`
+        @keyframes routey-progress {
+          0%   { width: 0%; margin-left: 0%; }
+          50%  { width: 60%; margin-left: 20%; }
+          100% { width: 0%; margin-left: 100%; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function OfflineBanner() {
+  const [offline, setOffline] = useState(false);
+
+  useEffect(() => {
+    const goOffline = () => setOffline(true);
+    const goOnline = () => setOffline(false);
+
+    // Check initial state on client
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setOffline(true);
+    }
+
+    window.addEventListener("offline", goOffline);
+    window.addEventListener("online", goOnline);
+    return () => {
+      window.removeEventListener("offline", goOffline);
+      window.removeEventListener("online", goOnline);
+    };
+  }, []);
+
+  if (!offline) return null;
+
+  return (
+    <div className="fixed inset-x-0 top-0 z-[9998] flex items-center justify-center bg-amber-500 px-4 py-2 text-sm font-medium text-white shadow-md">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="mr-2 h-4 w-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M18.364 5.636a9 9 0 010 12.728M5.636 18.364a9 9 0 010-12.728M8.464 15.536a5 5 0 010-7.072M15.536 8.464a5 5 0 010 7.072M12 12h.01"
+        />
+      </svg>
+      网络已断开
+    </div>
+  );
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
+      <OfflineBanner />
+      <RouteProgressBar />
+      <ErrorBoundary>
+        <Outlet />
+      </ErrorBoundary>
     </QueryClientProvider>
   );
 }

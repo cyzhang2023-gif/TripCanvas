@@ -93,7 +93,6 @@ async function callDeepseek(messages: DeepseekMessage[]): Promise<string> {
   }
 
   const data = (await res.json()) as DeepseekResponse;
-  console.log(`[AI] Tokens used: ${data.usage?.total_tokens ?? "?"}`);
   return data.choices[0]?.message?.content ?? "";
 }
 
@@ -157,7 +156,6 @@ async function callDeepseekStream(
     }
   }
 
-  console.log(`[AI] Stream complete (${accumulated.length} chars)`);
   return accumulated;
 }
 
@@ -285,7 +283,7 @@ async function parseAiResponse(raw: string, kind: SourceKind): Promise<Trip> {
   // Use AI-provided coordinates; only geocode spots that are missing lat/lng
   const needGeocode = allRaw.filter((s) => s.lat == null || s.lng == null);
   if (needGeocode.length > 0) {
-    console.log(`[AI] ${allRaw.length - needGeocode.length}/${allRaw.length} spots have AI coordinates, geocoding ${needGeocode.length} remaining...`);
+    /* logged: geocoding remaining spots */
     const geocoded = await batchGeocode(
       needGeocode.map((s) => ({
         title: s._address || s.title,
@@ -296,7 +294,7 @@ async function parseAiResponse(raw: string, kind: SourceKind): Promise<Trip> {
       if (geocoded[i]?.lat != null) { s.lat = geocoded[i].lat; s.lng = geocoded[i].lng; }
     });
   } else {
-    console.log(`[AI] All ${allRaw.length} spots have AI coordinates — skipping geocoding`);
+    /* logged: all spots have AI coordinates */
   }
 
   // Reassemble into days
@@ -376,7 +374,7 @@ export async function parseWithAI(
     { role: "user", content: buildUserMessage(kind, content) },
   ];
 
-  console.log(`[AI] Calling Deepseek for trip parsing (${hasImage ? "with image" : "text only"})...`);
+  /* logged: calling Deepseek for trip parsing */
   onProgress?.({ spotsFound: 0, daysFound: 0, destination: "", phase: "connecting" });
 
   let raw: string;
@@ -394,7 +392,7 @@ export async function parseWithAI(
     }
   } catch (err) {
     if (hasImage) {
-      console.log("[AI] Multimodal call failed, retrying with text only...");
+      /* logged: multimodal call failed, retrying text only */
       const { text } = extractImageBase64(content);
       const textContent = text || "请根据用户意图生成一个推荐旅行行程";
       const fallbackMessages: DeepseekMessage[] = [
@@ -407,10 +405,8 @@ export async function parseWithAI(
     }
   }
 
-  console.log("[AI] Got response, parsing...");
   onProgress?.({ spotsFound: 0, daysFound: 0, destination: "", phase: "parsing" });
   const trip = await parseAiResponse(raw, kind);
-  console.log(`[AI] Trip "${trip.name}" created with ${trip.days.length} days`);
 
   return trip;
 }
@@ -470,12 +466,9 @@ export async function generateQuizTrip(answers: QuizAnswers): Promise<Trip> {
     { role: "user", content: userPrompt },
   ];
 
-  console.log("[AI] Calling Deepseek for quiz trip generation...");
   const raw = await callDeepseek(messages);
-  console.log("[AI] Got response, parsing...");
 
   const trip = await parseAiResponse(raw, "text");
-  console.log(`[AI] Quiz trip "${trip.name}" created with ${trip.days.length} days`);
 
   return trip;
 }

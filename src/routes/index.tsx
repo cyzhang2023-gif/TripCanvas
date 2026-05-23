@@ -8,27 +8,27 @@ import {
 import { useMemo, useState } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { useFeaturedRoutes, useTripActions, type SourceKind } from "@/lib/tripStore";
-import heroImg from "@/assets/hero-santorini-blue.png";
-import tokyoImg from "@/assets/tokyo-sakura.jpg";
-import maldivesImg from "@/assets/maldives.jpg";
-import chiangmaiImg from "@/assets/chiangmai.jpg";
-import lavenderImg from "@/assets/lavender.jpg";
-import festivalImg from "@/assets/festival.jpg";
-import surfImg from "@/assets/surf.jpg";
-import whaleImg from "@/assets/whale.jpg";
-import amalfiImg from "@/assets/amalfi.jpg";
-import cappadociaImg from "@/assets/cappadocia.jpg";
-import auroraImg from "@/assets/aurora.jpg";
-import lijiangImg from "@/assets/lijiang.jpg";
-import swissImg from "@/assets/swiss-train.jpg";
-import destFranceImg from "@/assets/dest-france.jpg";
-import destJapanImg from "@/assets/dest-japan.jpg";
-import grandCanyonImg from "@/assets/grand-canyon.jpg";
-import machuPicchuImg from "@/assets/machu-picchu.jpg";
-import safariImg from "@/assets/safari.jpg";
-import sydneyImg from "@/assets/sydney.jpg";
-import aiBot from "@/assets/ai-bot.png";
-import avatarUser from "@/assets/avatar-user.png";
+import heroImg from "@/assets/hero-santorini-blue.webp";
+import tokyoImg from "@/assets/tokyo-sakura.webp";
+import maldivesImg from "@/assets/maldives.webp";
+import chiangmaiImg from "@/assets/chiangmai.webp";
+import lavenderImg from "@/assets/lavender.webp";
+import festivalImg from "@/assets/festival.webp";
+import surfImg from "@/assets/surf.webp";
+import whaleImg from "@/assets/whale.webp";
+import amalfiImg from "@/assets/amalfi.webp";
+import cappadociaImg from "@/assets/cappadocia.webp";
+import auroraImg from "@/assets/aurora.webp";
+import lijiangImg from "@/assets/lijiang.webp";
+import swissImg from "@/assets/swiss-train.webp";
+import destFranceImg from "@/assets/dest-france.webp";
+import destJapanImg from "@/assets/dest-japan.webp";
+import grandCanyonImg from "@/assets/grand-canyon.webp";
+import machuPicchuImg from "@/assets/machu-picchu.webp";
+import safariImg from "@/assets/safari.webp";
+import sydneyImg from "@/assets/sydney.webp";
+import aiBot from "@/assets/ai-bot.webp";
+import avatarUser from "@/assets/avatar-user.webp";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -156,7 +156,7 @@ function Index() {
           设计思路: iPhone 14 可视844px，300px hero + 工具栏后
           用户首屏就能看到"灵感地图"的顶部，产生继续滑的欲望 */}
       <section className="relative h-[300px] w-full overflow-hidden">
-        <img src={heroImg} alt="" className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: "75% 60%" }} />
+        <img src={heroImg} alt="圣托里尼日落全景" className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: "75% 60%" }} />
         <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(0,0,0,0.15) 0%, transparent 35%, rgba(0,0,0,0.55) 100%)" }} />
 
         {/* top bar */}
@@ -164,11 +164,11 @@ function Index() {
           <div className="flex items-center gap-1 rounded-full bg-white/20 backdrop-blur-md px-3 py-1 text-white text-[11px] font-medium">
             <MapPin className="h-3 w-3" /> 圣托里尼
           </div>
-          <button className="relative grid place-items-center h-8 w-8 rounded-full bg-white/20 backdrop-blur-md text-white">
+          <button className="relative grid place-items-center h-8 w-8 rounded-full bg-white/20 backdrop-blur-md text-white" aria-label="通知">
             <Bell className="h-3.5 w-3.5" />
             <span className="absolute top-1 right-1.5 h-1.5 w-1.5 rounded-full bg-rose-500" />
           </button>
-          <img src={avatarUser} alt="" className="h-8 w-8 rounded-full object-cover ring-2 ring-white/40" />
+          <img src={avatarUser} alt="用户头像" className="h-8 w-8 rounded-full object-cover ring-2 ring-white/40" loading="lazy" />
         </div>
 
         {/* headline */}
@@ -188,7 +188,7 @@ function Index() {
               className="flex-1 bg-transparent text-[11px] py-1.5 outline-none placeholder:text-gray-400 min-w-0"
               value={content} onChange={(e) => setContent(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") submitHero(); }} />
-            <button type="button" onClick={submitHero} disabled={submitting}
+            <button type="button" onClick={submitHero} disabled={submitting} aria-label="搜索"
               className="grid place-items-center h-7 w-7 rounded-full text-white shrink-0 disabled:opacity-70"
               style={{ background: "var(--gradient-ai)" }}>
               {submitting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
@@ -246,7 +246,7 @@ function Index() {
                 去和AI聊聊 <ArrowRight className="h-2 w-2" />
               </span>
             </div>
-            <img src={aiBot} alt="" className="absolute -right-1.5 -bottom-1.5 h-[52px] w-[52px] object-contain opacity-80" />
+            <img src={aiBot} alt="AI助手" className="absolute -right-1.5 -bottom-1.5 h-[52px] w-[52px] object-contain opacity-80" loading="lazy" />
           </div>
         </div>
       </section>
@@ -263,10 +263,10 @@ function Index() {
             <MapPin className="h-3 w-3 text-primary" />
           </div>
           <div className="relative h-[105px] mt-1">
-            <img src="/world-map-simple.svg" alt="" className="absolute inset-0 h-full w-full object-contain opacity-[0.55]" />
+            <img src="/world-map-simple.svg" alt="世界地图" className="absolute inset-0 h-full w-full object-contain opacity-[0.55]" loading="lazy" />
             {inspoMap.map((p) => (
               <div key={p.name} className="absolute flex flex-col items-center" style={{ top: p.top, left: p.left, transform: "translate(-50%,-50%)" }}>
-                <img src={p.img} alt="" className="h-[22px] w-[22px] rounded-full object-cover ring-[1.5px] ring-white shadow-sm" />
+                <img src={p.img} alt={p.name} className="h-[22px] w-[22px] rounded-full object-cover ring-[1.5px] ring-white shadow-sm" loading="lazy" />
                 <span className="text-[6.5px] font-semibold mt-[1px] leading-none">{p.name}</span>
                 <span className="text-[5.5px] text-muted-foreground leading-none">{p.sub}</span>
               </div>
@@ -297,7 +297,7 @@ function Index() {
             ).map(s => (
               <Link key={s.title} to="/explore" search={{ dest: (s as any).dest || "" }}
                 className="relative shrink-0 w-[88px] aspect-[4/5] rounded-xl overflow-hidden block">
-                <img src={s.img} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+                <img src={s.img} alt={s.title} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
                 <span className="absolute top-1.5 left-1 text-[6px] font-bold px-1 py-[2px] rounded text-white" style={{ background: s.tagColor }}>{s.tag}</span>
                 <div className="absolute bottom-1.5 left-1 right-1 text-white">
@@ -332,7 +332,7 @@ function Index() {
               </div>
             </Link>
           ))}
-          <button className="shrink-0 grid place-items-center w-6 rounded-full bg-card shadow-[var(--shadow-soft)]">
+          <button className="shrink-0 grid place-items-center w-6 rounded-full bg-card shadow-[var(--shadow-soft)]" aria-label="查看更多">
             <ChevronRight className="h-3 w-3 text-muted-foreground" />
           </button>
         </div>
@@ -357,7 +357,7 @@ function Index() {
               </div>
               {/* card */}
               <div className="relative w-full h-[64px] rounded-xl overflow-hidden shadow-sm">
-                <img src={c.img} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+                <img src={c.img} alt={c.title} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
                 <div className="absolute bottom-1.5 left-1.5 right-1.5 text-white">
                   <p className="text-[10px] font-bold leading-tight">{c.title}</p>
@@ -366,7 +366,7 @@ function Index() {
               </div>
             </Link>
           ))}
-          <button className="shrink-0 grid place-items-center w-6 rounded-full bg-card shadow-sm">
+          <button className="shrink-0 grid place-items-center w-6 rounded-full bg-card shadow-sm" aria-label="查看更多">
             <ChevronRight className="h-3 w-3 text-muted-foreground" />
           </button>
         </div>
@@ -382,10 +382,10 @@ function Index() {
           <Link to="/destinations" className="text-[8px] text-muted-foreground flex items-center">更多<ChevronRight className="h-2.5 w-2.5" /></Link>
         </div>
         <div className="mt-1.5 relative">
-          <button className="absolute -left-0.5 top-[40%] -translate-y-1/2 z-10 grid place-items-center h-6 w-6 rounded-full bg-card shadow-md">
+          <button className="absolute -left-0.5 top-[40%] -translate-y-1/2 z-10 grid place-items-center h-6 w-6 rounded-full bg-card shadow-md" aria-label="向左滑动">
             <ChevronLeft className="h-3 w-3" />
           </button>
-          <button className="absolute -right-0.5 top-[40%] -translate-y-1/2 z-10 grid place-items-center h-6 w-6 rounded-full bg-card shadow-md">
+          <button className="absolute -right-0.5 top-[40%] -translate-y-1/2 z-10 grid place-items-center h-6 w-6 rounded-full bg-card shadow-md" aria-label="向右滑动">
             <ChevronRight className="h-3 w-3" />
           </button>
           <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
@@ -399,7 +399,7 @@ function Index() {
             ).map(p => (
               <Link key={p.title} to="/explore" search={{ dest: (p as any).dest || "" }} className="shrink-0 w-[108px] block">
                 <div className="relative aspect-square rounded-xl overflow-hidden">
-                  <img src={p.img} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+                  <img src={p.img} alt={p.title} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
                   {p.video && (
                     <div className="absolute inset-0 grid place-items-center">
                       <div className="h-7 w-7 rounded-full bg-black/25 backdrop-blur grid place-items-center">

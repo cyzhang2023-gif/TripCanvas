@@ -10,10 +10,12 @@ import {
 import { useState } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { Img } from "@/components/Img";
+import { MyTripsPageSkeleton } from "@/components/PageSkeletons";
 import { coverUrl, useTripActions, useTripsQuery, type Trip } from "@/lib/tripStore";
 
 export const Route = createFileRoute("/my-trips")({
   component: MyTrips,
+  pendingComponent: MyTripsPageSkeleton,
   head: () => ({ meta: [{ title: "我的行程 · Routey" }] }),
 });
 
@@ -38,10 +40,10 @@ function MyTrips() {
           <p className="text-[10px] text-muted-foreground">每一次旅行，都是新的故事</p>
         </div>
         <div className="flex items-center gap-1 pt-0.5">
-          <button className="pressable flex h-8 w-8 items-center justify-center rounded-full bg-card shadow-sm">
+          <button className="pressable flex h-8 w-8 items-center justify-center rounded-full bg-card shadow-sm" aria-label="搜索">
             <Search className="h-3.5 w-3.5 text-foreground" />
           </button>
-          <button className="pressable flex h-8 w-8 items-center justify-center rounded-full bg-card shadow-sm">
+          <button className="pressable flex h-8 w-8 items-center justify-center rounded-full bg-card shadow-sm" aria-label="更多选项">
             <MoreHorizontal className="h-3.5 w-3.5 text-foreground" />
           </button>
         </div>

@@ -276,7 +276,7 @@ function InspirationMap() {
             transition: "left 0.6s cubic-bezier(0.4,0,0.2,1), top 0.6s cubic-bezier(0.4,0,0.2,1), transform 0.6s cubic-bezier(0.4,0,0.2,1)",
           }}
         >
-          <img src="/world-map.svg?v=4" alt="" className="absolute inset-0 h-full w-full" draggable={false} />
+          <img src="/world-map.svg?v=4" alt="灵感世界地图" className="absolute inset-0 h-full w-full" draggable={false} loading="lazy" />
 
           {/* Bubbles positioned as % of SVG coordinate space */}
           <style>{`

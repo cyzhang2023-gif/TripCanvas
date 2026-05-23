@@ -487,6 +487,7 @@ function TripMetaBar({ trip }: { trip: TripType }) {
               src={tripCover}
               alt="封面"
               className="h-[88px] w-[88px] rounded-2xl object-cover shadow-md"
+              loading="lazy"
             />
             <span className="text-[9px] font-medium text-primary">查看攻略 →</span>
           </div>
@@ -578,6 +579,7 @@ function SpotModal({ spot, onClose }: { spot: Spot; onClose: () => void }) {
           <button
             onClick={handleClose}
             className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm active:bg-black/50"
+            aria-label="关闭"
           >
             <X className="h-4 w-4" />
           </button>
@@ -798,7 +800,7 @@ function SpotDetailPopup({
           >
             <Navigation className="h-3 w-3 text-primary" />
           </a>
-          <button onClick={onClose} className="pressable flex h-6 w-6 items-center justify-center rounded-full bg-muted text-muted-foreground">
+          <button onClick={onClose} className="pressable flex h-6 w-6 items-center justify-center rounded-full bg-muted text-muted-foreground" aria-label="关闭">
             <X className="h-3.5 w-3.5" />
           </button>
         </div>
@@ -918,7 +920,7 @@ function BudgetPopup({ days, country, onClose }: { days: Day[]; country?: string
                   </div>
                 </div>
               </div>
-              <button onClick={onClose} className="pressable flex h-7 w-7 items-center justify-center rounded-full bg-gray-100">
+              <button onClick={onClose} className="pressable flex h-7 w-7 items-center justify-center rounded-full bg-gray-100" aria-label="关闭">
                 <X className="h-4 w-4 text-gray-500" />
               </button>
             </div>

@@ -3,10 +3,12 @@ import { Bell, ChevronRight, Globe, Loader2, MapPin, Search, ArrowRight } from "
 import { useState } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { Img } from "@/components/Img";
+import { DestinationsPageSkeleton } from "@/components/PageSkeletons";
 import { useDestinations } from "@/lib/tripStore";
 
 export const Route = createFileRoute("/destinations")({
   component: Destinations,
+  pendingComponent: DestinationsPageSkeleton,
   head: () => ({ meta: [{ title: "探索世界的美好 · 趣旅" }] }),
 });
 

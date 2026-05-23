@@ -7,11 +7,13 @@ import {
 } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 import { BottomNav } from "@/components/BottomNav";
+import { BudgetPageSkeleton } from "@/components/PageSkeletons";
 import { useDestinations, useExploreRoutes } from "@/lib/tripStore";
-import heroImg from "@/assets/hero-santorini-blue.png";
+import heroImg from "@/assets/hero-santorini-blue.webp";
 
 export const Route = createFileRoute("/budget")({
   component: BudgetPage,
+  pendingComponent: BudgetPageSkeleton,
   head: () => ({ meta: [{ title: "预算规划 · Routey" }] }),
 });
 
@@ -137,7 +139,7 @@ function BudgetPage() {
         </header>
 
         <div className="h-[110px] w-full overflow-hidden">
-          <img src={heroImg} alt="" className="h-full w-full object-cover" style={{ objectPosition: "75% 40%" }} />
+          <img src={heroImg} alt="预算规划背景" className="h-full w-full object-cover" loading="lazy" style={{ objectPosition: "75% 40%" }} />
         </div>
 
         <div className="px-3 -mt-5 space-y-2.5 relative z-10">
@@ -185,7 +187,7 @@ function BudgetPage() {
                     className={`w-full flex items-center gap-2.5 rounded-xl p-2 text-left transition ${
                       activeRoute?.id === r.id ? "bg-primary/8 ring-1.5 ring-primary" : "bg-gray-50 active:bg-gray-100"
                     }`}>
-                    <img src={r.cover} alt="" className="h-10 w-10 rounded-lg object-cover shrink-0" />
+                    <img src={r.cover} alt={r.title || "路线封面"} className="h-10 w-10 rounded-lg object-cover shrink-0" loading="lazy" />
                     <div className="flex-1 min-w-0">
                       <p className="text-[11px] font-semibold truncate">{r.title}</p>
                       <p className="text-[9px] text-muted-foreground">{r.days}天 · {r.spots}个景点</p>

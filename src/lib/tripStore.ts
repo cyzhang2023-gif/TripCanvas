@@ -1,22 +1,22 @@
 import { useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import tokyo from "@/assets/tokyo.jpg";
-import japan from "@/assets/dest-japan.jpg";
-import korea from "@/assets/dest-korea.jpg";
-import thailand from "@/assets/dest-thailand.jpg";
-import france from "@/assets/dest-france.jpg";
-import mapBg from "@/assets/map-bg.jpg";
-import grandCanyon from "@/assets/grand-canyon.jpg";
-import aurora from "@/assets/aurora.jpg";
-import safari from "@/assets/safari.jpg";
-import maldivesImg from "@/assets/maldives.jpg";
-import amalfi from "@/assets/amalfi.jpg";
-import santorini from "@/assets/hero-santorini.jpg";
-import lijiang from "@/assets/lijiang.jpg";
-import swissTrain from "@/assets/swiss-train.jpg";
-import sydney from "@/assets/sydney.jpg";
-import cappadocia from "@/assets/cappadocia.jpg";
-import machuPicchu from "@/assets/machu-picchu.jpg";
+import tokyo from "@/assets/tokyo.webp";
+import japan from "@/assets/dest-japan.webp";
+import korea from "@/assets/dest-korea.webp";
+import thailand from "@/assets/dest-thailand.webp";
+import france from "@/assets/dest-france.webp";
+import mapBg from "@/assets/map-bg.webp";
+import grandCanyon from "@/assets/grand-canyon.webp";
+import aurora from "@/assets/aurora.webp";
+import safari from "@/assets/safari.webp";
+import maldivesImg from "@/assets/maldives.webp";
+import amalfi from "@/assets/amalfi.webp";
+import santorini from "@/assets/hero-santorini.webp";
+import lijiang from "@/assets/lijiang.webp";
+import swissTrain from "@/assets/swiss-train.webp";
+import sydney from "@/assets/sydney.webp";
+import cappadocia from "@/assets/cappadocia.webp";
+import machuPicchu from "@/assets/machu-picchu.webp";
 import type {
   CoverKey,
   Day,

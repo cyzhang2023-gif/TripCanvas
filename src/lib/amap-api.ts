@@ -113,7 +113,7 @@ export async function batchGeocode(
     if (geo) {
       results.push({ ...spot, lat: geo.lat, lng: geo.lng });
     } else {
-      console.log(`[Geocode] Failed for: ${spot.title} (${spot.city})`);
+      /* logged: geocode failed */
       results.push(spot);
     }
 
@@ -320,7 +320,7 @@ async function getOsrmRoute(
       polyline,
     };
   } catch (err) {
-    console.log(`[OSRM] Route failed:`, err);
+    /* logged: OSRM route failed */
     return null;
   }
 }

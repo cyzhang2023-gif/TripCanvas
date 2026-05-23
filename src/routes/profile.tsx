@@ -8,8 +8,8 @@ import {
 import { useState } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { useTrips } from "@/lib/tripStore";
-import avatarImg from "@/assets/avatar-user.png";
-import heroImg from "@/assets/hero-santorini-blue.png";
+import avatarImg from "@/assets/avatar-user.webp";
+import heroImg from "@/assets/hero-santorini-blue.webp";
 
 export const Route = createFileRoute("/profile")({
   component: Profile,
@@ -85,11 +85,12 @@ function Profile() {
 
       {/* Banner */}
       <div className="relative h-[200px] w-full overflow-hidden">
-        <img src={heroImg} alt="" className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: "75% 60%" }} />
+        <img src={heroImg} alt="个人主页背景" className="absolute inset-0 h-full w-full object-cover" loading="lazy" style={{ objectPosition: "75% 60%" }} />
         <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/30" />
         <button
           onClick={() => setShowSettings(true)}
           className="absolute right-4 top-[env(safe-area-inset-top,44px)] z-10 grid h-9 w-9 place-items-center rounded-full bg-black/20 backdrop-blur-md text-white"
+          aria-label="设置"
         >
           <Settings className="h-4 w-4" />
         </button>
@@ -99,7 +100,7 @@ function Profile() {
       <div className="relative px-5 -mt-10">
         <div className="flex items-end gap-4">
           <div className="relative shrink-0">
-            <img src={avatarImg} alt="avatar" className="h-[72px] w-[72px] rounded-full border-[3px] border-white object-cover shadow-lg" />
+            <img src={avatarImg} alt="用户头像" className="h-[72px] w-[72px] rounded-full border-[3px] border-white object-cover shadow-lg" loading="lazy" />
             <span className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 ring-2 ring-white">
               <Star className="h-2.5 w-2.5 text-white" fill="currentColor" />
             </span>
@@ -202,7 +203,7 @@ function Profile() {
         <Sheet title="编辑资料" onClose={() => setShowEditProfile(false)}>
           <div className="flex flex-col items-center gap-3 py-4">
             <div className="h-20 w-20 rounded-full border-[3px] border-primary/20 p-[2px]">
-              <img src={avatarImg} alt="" className="h-full w-full rounded-full object-cover" />
+              <img src={avatarImg} alt="用户头像" className="h-full w-full rounded-full object-cover" loading="lazy" />
             </div>
             <p className="text-[11px] text-muted-foreground">点击更换头像（即将开放）</p>
           </div>

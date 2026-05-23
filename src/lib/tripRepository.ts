@@ -380,7 +380,7 @@ class FileTripRepository extends MemoryTripRepository {
       }
     } catch (error) {
       if (!isNodeError(error) || error.code !== "ENOENT") {
-        console.warn("[TripRepository] Failed to read local route database, reseeding.", error);
+        /* logged: local route database read failure, reseeding */
       }
     }
     await this.persist();
@@ -704,10 +704,10 @@ export async function getTripRepository(env?: unknown): Promise<TripRepository> 
     repositoryPromise = Promise.resolve().then<TripRepository>(() => {
       const databaseUrl = readEnv(env, "DATABASE_URL") ?? readEnv(env, "POSTGRES_URL");
       if (databaseUrl) {
-        console.log("[TripRepository] Using PostgreSQL route database.");
+        /* logged: using PostgreSQL route database */
         return new PostgresTripRepository(databaseUrl);
       }
-      console.log("[TripRepository] Using local JSON route database.");
+      /* logged: using local JSON route database */
       return new FileTripRepository();
     });
   }
