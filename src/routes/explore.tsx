@@ -8,6 +8,7 @@ import {
   Copy,
   Flame,
   Footprints,
+  GitBranch,
   Heart,
   LayoutGrid,
   Loader2,
@@ -24,6 +25,7 @@ import { z } from "zod";
 import { BottomNav } from "@/components/BottomNav";
 import { Img } from "@/components/Img";
 import { ExplorePageSkeleton } from "@/components/PageSkeletons";
+import { RatingSummary } from "@/components/RatingSummary";
 import { useExploreRoutes, useTripActions, type ExploreRoute } from "@/lib/tripStore";
 
 const unsplash = (id: string, w = 600) =>
@@ -161,6 +163,7 @@ function ExplorePage() {
   const [sort, setSort] = useState<(typeof sortOptions)[number]>("综合排序");
   const [addingId, setAddingId] = useState("");
   const [addedId, setAddedId] = useState("");
+  const [forkingId, setForkingId] = useState("");
   const [toast, setToast] = useState("");
   const [showMenu, setShowMenu] = useState(false);
 
@@ -196,6 +199,23 @@ function ExplorePage() {
       setToast(err instanceof Error ? err.message : "路线打开失败");
     } finally {
       setAddingId("");
+    }
+  };
+
+  const forkRoute = async (route: ExploreRoute) => {
+    setForkingId(route.id);
+    try {
+      const res = await actions.addExploreRoute(route.id);
+      if ("aiJobId" in res) {
+        nav({ to: "/parsing", search: { jobId: res.aiJobId } });
+      } else {
+        setToast("已收藏为我的行程");
+        nav({ to: "/trip", search: { id: res.id, edit: "1" } });
+      }
+    } catch (err) {
+      setToast(err instanceof Error ? err.message : "收藏失败");
+    } finally {
+      setForkingId("");
     }
   };
 
@@ -379,7 +399,9 @@ function ExplorePage() {
               rank={i + 1}
               adding={addingId === r.id}
               added={addedId === r.id}
+              forking={forkingId === r.id}
               onOpen={() => void openRoute(r)}
+              onFork={() => void forkRoute(r)}
             />
           ))}
         </div>
@@ -447,13 +469,17 @@ function RouteCard({
   rank,
   adding,
   added,
+  forking,
   onOpen,
+  onFork,
 }: {
   route: ExploreRoute;
   rank: number;
   adding: boolean;
   added: boolean;
+  forking: boolean;
   onOpen: () => void;
+  onFork: () => void;
 }) {
   const sub = route.sourceVerified
     ? `${route.sourceName ?? route.source} · 官方来源`
@@ -496,6 +522,10 @@ function RouteCard({
             ))}
           </div>
         )}
+        {/* Rating summary */}
+        <div className="mt-1">
+          <RatingSummary routeId={route.id} compact />
+        </div>
         <div className="mt-1.5 flex items-center justify-between">
           <div className="flex items-center gap-2 text-[9px] text-[#4f5561]">
             <span className="flex items-center gap-0.5">
@@ -508,14 +538,26 @@ function RouteCard({
               <Footprints className="h-3 w-3" /> {estSteps}w步
             </span>
           </div>
-          <button
-            type="button"
-            onClick={onOpen}
-            disabled={adding}
-            className="pressable flex h-[26px] items-center justify-center rounded-full bg-gradient-to-r from-[#735cff] to-[#5b45f3] px-3 text-[10px] font-bold text-white shadow-[0_8px_18px_rgba(91,69,243,.22)] disabled:opacity-70"
-          >
-            {adding ? <Loader2 className="h-3 w-3 animate-spin" /> : added ? "已加入" : "查看详情"}
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onFork(); }}
+              disabled={forking}
+              className="pressable flex h-[26px] items-center justify-center gap-1 rounded-full border border-violet-300 bg-violet-50 px-2.5 text-[10px] font-bold text-violet-600 disabled:opacity-70"
+              title="收藏为我的行程"
+            >
+              {forking ? <Loader2 className="h-3 w-3 animate-spin" /> : <GitBranch className="h-3 w-3" />}
+              <span className="hidden min-[380px]:inline">定制</span>
+            </button>
+            <button
+              type="button"
+              onClick={onOpen}
+              disabled={adding}
+              className="pressable flex h-[26px] items-center justify-center rounded-full bg-gradient-to-r from-[#735cff] to-[#5b45f3] px-3 text-[10px] font-bold text-white shadow-[0_8px_18px_rgba(91,69,243,.22)] disabled:opacity-70"
+            >
+              {adding ? <Loader2 className="h-3 w-3 animate-spin" /> : added ? "已加入" : "查看详情"}
+            </button>
+          </div>
         </div>
       </div>
     </article>

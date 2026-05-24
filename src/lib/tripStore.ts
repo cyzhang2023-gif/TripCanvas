@@ -275,8 +275,8 @@ export function useTripActions() {
         syncTrip(patchTrip(tripId, { action: "optimizeDay", dayId })),
       updateSpot: (tripId: string, dayId: string, spot: Spot) =>
         syncTrip(patchTrip(tripId, { action: "updateSpot", dayId, spot })),
-      addSpot: (tripId: string, dayId: string) =>
-        syncTrip(patchTrip(tripId, { action: "addSpot", dayId })),
+      addSpot: (tripId: string, dayId: string, title?: string, desc?: string) =>
+        syncTrip(patchTrip(tripId, { action: "addSpot", dayId, ...(title ? { title } : {}), ...(desc ? { desc } : {}) })),
       deleteSpot: (tripId: string, dayId: string, spotId: string) =>
         syncTrip(patchTrip(tripId, { action: "deleteSpot", dayId, spotId })),
       async publishTrip(id: string) {

@@ -13,6 +13,7 @@ import { Route as TripRouteImport } from './routes/trip'
 import { Route as ShareRouteImport } from './routes/share'
 import { Route as QuizRouteImport } from './routes/quiz'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as PreviewRouteImport } from './routes/preview'
 import { Route as ParsingRouteImport } from './routes/parsing'
 import { Route as MyTripsRouteImport } from './routes/my-trips'
 import { Route as InspirationRouteImport } from './routes/inspiration'
@@ -41,6 +42,11 @@ const QuizRoute = QuizRouteImport.update({
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PreviewRoute = PreviewRouteImport.update({
+  id: '/preview',
+  path: '/preview',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ParsingRoute = ParsingRouteImport.update({
@@ -99,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/inspiration': typeof InspirationRoute
   '/my-trips': typeof MyTripsRoute
   '/parsing': typeof ParsingRoute
+  '/preview': typeof PreviewRoute
   '/profile': typeof ProfileRoute
   '/quiz': typeof QuizRoute
   '/share': typeof ShareRoute
@@ -114,6 +121,7 @@ export interface FileRoutesByTo {
   '/inspiration': typeof InspirationRoute
   '/my-trips': typeof MyTripsRoute
   '/parsing': typeof ParsingRoute
+  '/preview': typeof PreviewRoute
   '/profile': typeof ProfileRoute
   '/quiz': typeof QuizRoute
   '/share': typeof ShareRoute
@@ -130,6 +138,7 @@ export interface FileRoutesById {
   '/inspiration': typeof InspirationRoute
   '/my-trips': typeof MyTripsRoute
   '/parsing': typeof ParsingRoute
+  '/preview': typeof PreviewRoute
   '/profile': typeof ProfileRoute
   '/quiz': typeof QuizRoute
   '/share': typeof ShareRoute
@@ -147,6 +156,7 @@ export interface FileRouteTypes {
     | '/inspiration'
     | '/my-trips'
     | '/parsing'
+    | '/preview'
     | '/profile'
     | '/quiz'
     | '/share'
@@ -162,6 +172,7 @@ export interface FileRouteTypes {
     | '/inspiration'
     | '/my-trips'
     | '/parsing'
+    | '/preview'
     | '/profile'
     | '/quiz'
     | '/share'
@@ -177,6 +188,7 @@ export interface FileRouteTypes {
     | '/inspiration'
     | '/my-trips'
     | '/parsing'
+    | '/preview'
     | '/profile'
     | '/quiz'
     | '/share'
@@ -193,6 +205,7 @@ export interface RootRouteChildren {
   InspirationRoute: typeof InspirationRoute
   MyTripsRoute: typeof MyTripsRoute
   ParsingRoute: typeof ParsingRoute
+  PreviewRoute: typeof PreviewRoute
   ProfileRoute: typeof ProfileRoute
   QuizRoute: typeof QuizRoute
   ShareRoute: typeof ShareRoute
@@ -227,6 +240,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/preview': {
+      id: '/preview'
+      path: '/preview'
+      fullPath: '/preview'
+      preLoaderRoute: typeof PreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/parsing': {
@@ -305,6 +325,7 @@ const rootRouteChildren: RootRouteChildren = {
   InspirationRoute: InspirationRoute,
   MyTripsRoute: MyTripsRoute,
   ParsingRoute: ParsingRoute,
+  PreviewRoute: PreviewRoute,
   ProfileRoute: ProfileRoute,
   QuizRoute: QuizRoute,
   ShareRoute: ShareRoute,

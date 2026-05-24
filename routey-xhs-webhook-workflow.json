@@ -1,0 +1,289 @@
+{
+  "name": "Routey - XHS 小红书笔记解析 (Webhook)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "xhs-parse",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [220, 300],
+      "webhookId": "xhs-parse"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.deepseek.com/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"deepseek-chat\",\n  \"temperature\": 0.1,\n  \"max_tokens\": 4096,\n  \"response_format\": {\"type\": \"json_object\"},\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"你是一个旅行攻略解析引擎。用户会发来一篇小红书旅行笔记的内容，你需要：\\n1. 从笔记中提取出【真实的目的地城市和国家】\\n2. 根据笔记中提到的景点、美食、活动，生成结构化行程\\n3. 如果笔记内容不足以填满完整行程，可以在【同一目的地】补充推荐\\n\\n⚠️ 关键规则：目的地必须来自笔记内容，禁止编造或替换为其他城市！\\n\\nReturn STRICT VALID JSON only.\\nRequired JSON structure:\\n{\\n  \\\"route_title\\\": \\\"行程标题（包含目的地名称）\\\",\\n  \\\"city\\\": \\\"从笔记中提取的城市名\\\",\\n  \\\"country\\\": \\\"国家\\\",\\n  \\\"destination\\\": \\\"目的地（如：日本、泰国、印度尼西亚）\\\",\\n  \\\"route_theme\\\": \\\"citywalk|food|beach|luxury|nature|shopping|culture\\\",\\n  \\\"mood\\\": \\\"氛围描述\\\",\\n  \\\"summary\\\": \\\"50字以内的路线概述\\\",\\n  \\\"days_count\\\": 5,\\n  \\\"budget_level\\\": \\\"low|medium|high\\\",\\n  \\\"travel_type\\\": \\\"solo|couple|family|friends\\\",\\n  \\\"pace\\\": \\\"relaxed|normal|fast\\\",\\n  \\\"best_time\\\": \\\"spring|summer|autumn|winter|all\\\",\\n  \\\"tags\\\": \\\"标签1,标签2,标签3\\\",\\n  \\\"cover_image_query\\\": \\\"English search term for cover photo\\\",\\n  \\\"days\\\": [\\n    {\\n      \\\"day\\\": 1,\\n      \\\"title\\\": \\\"Day 1 标题\\\",\\n      \\\"summary\\\": \\\"当日概述\\\",\\n      \\\"places\\\": [\\n        {\\n          \\\"time\\\": \\\"09:00\\\",\\n          \\\"name\\\": \\\"地点名称\\\",\\n          \\\"description\\\": \\\"活动描述\\\",\\n          \\\"intro\\\": \\\"50字以内的详细介绍\\\",\\n          \\\"category\\\": \\\"景点|美食|购物|住宿|休闲\\\",\\n          \\\"rating\\\": 4.5,\\n          \\\"price\\\": \\\"当地货币价格\\\",\\n          \\\"duration_min\\\": 90,\\n          \\\"tags\\\": \\\"必去,打卡\\\",\\n          \\\"lat\\\": 35.6762,\\n          \\\"lng\\\": 139.6503,\\n          \\\"address\\\": \\\"Place, City, Country\\\",\\n          \\\"image_query\\\": \\\"English place name for image search\\\"\\n        }\\n      ]\\n    }\\n  ]\\n}\\n\\nRules:\\n1. 目的地城市和国家必须从用户提供的笔记内容中提取，绝对不能自行替换\\n2. Each day must have 5-8 places covering: 景点, 美食, 购物, 住宿, 休闲\\n3. lat/lng must be REAL WGS84 coordinates for the CORRECT city, accurate to 4 decimal places\\n4. price in local currency\\n5. rating range 3.0-5.0\\n6. category MUST be one of: 景点|美食|购物|住宿|休闲\\n7. Places in same day should be geographically close\\n8. Time from 09:00 to 21:00, logically ordered\\n9. Total places across all days >= 12\\n10. Return ONLY valid JSON, no markdown\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"以下是一篇小红书旅行笔记，请根据笔记内容解析并生成结构化行程。\\n\\n注意：目的地必须是笔记中提到的地方，不要替换成其他城市。\\n\\n---\\n标题：{{ $json.body.title }}\\n\\n正文：\\n{{ $json.body.desc }}\\n\\n标签：{{ $json.body.tags }}\"\n    }\n  ]\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 60000
+        }
+      },
+      "id": "node-deepseek",
+      "name": "DeepSeek AI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "DeepSeek API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse DeepSeek response and prepare route data\nconst raw = $input.first().json;\nconst content = raw.choices?.[0]?.message?.content || \"\";\n\nconst cleaned = content.replace(/```json/g, \"\").replace(/```/g, \"\").trim();\n\nlet data;\ntry {\n  data = JSON.parse(cleaned);\n} catch (e) {\n  const match = cleaned.match(/\\{[\\s\\S]*\\}/);\n  if (match) {\n    data = JSON.parse(match[0]);\n  } else {\n    throw new Error(\"Failed to parse AI response: \" + cleaned.substring(0, 200));\n  }\n}\n\n// Get source info from webhook body\nconst body = $items(\"Webhook\")[0]?.json?.body || {};\n\nreturn [{\n  json: {\n    route_title: data.route_title || \"\",\n    city: data.city || \"\",\n    country: data.country || \"\",\n    destination: data.destination || data.country || \"\",\n    route_theme: data.route_theme || \"\",\n    mood: data.mood || \"\",\n    places: JSON.stringify(data.days || []),\n    summary: data.summary || \"\",\n    raw_json: data,\n    source_url: body.source_url || \"xiaohongshu\",\n    status: \"published\",\n    quality_score: 80,\n    target_user: data.travel_type || \"\",\n    best_time: data.best_time || \"\",\n    days_count: data.days_count || data.days?.length || null,\n    budget_level: data.budget_level || \"\",\n    travel_type: data.travel_type || \"\",\n    pace: data.pace || \"\",\n    tags: data.tags ? \"小红书精选,\" + data.tags : \"小红书精选\",\n    cover_url: \"\",\n    likes: 0\n  }\n}];"
+      },
+      "id": "node-parse-route",
+      "name": "Parse Route",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": "public",
+        "table": "routes",
+        "columns": "route_title,city,country,destination,route_theme,mood,places,summary,raw_json,source_url,status,quality_score,target_user,best_time,days_count,budget_level,travel_type,pace,tags,cover_url,likes",
+        "options": {
+          "returnFields": "*"
+        }
+      },
+      "id": "node-pg-routes",
+      "name": "Postgres Routes",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [880, 300],
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "TripCanvas Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Split days from raw_json\nconst routeId = $input.first().json.id;\nconst raw = $input.first().json.raw_json || {};\nconst days = raw.days || [];\n\nif (!routeId) {\n  throw new Error(\"No route_id returned from Postgres insert\");\n}\nif (days.length === 0) {\n  throw new Error(\"No days found in raw_json\");\n}\n\nreturn days.map((day, index) => ({\n  json: {\n    route_id: routeId,\n    day_number: day.day || index + 1,\n    title: day.title || \"Day \" + (index + 1),\n    summary: day.summary || \"\",\n    places: day.places || []\n  }\n}));"
+      },
+      "id": "node-split-days",
+      "name": "Split Days",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1100, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": "public",
+        "table": "itinerary_days",
+        "columns": "route_id,day_number,title,summary",
+        "options": {
+          "returnFields": "id,route_id,day_number,title,summary"
+        }
+      },
+      "id": "node-pg-days",
+      "name": "Postgres Days",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1320, 300],
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "TripCanvas Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Split places per day\nconst dayId = $input.first().json.id;\nconst dayNumber = $input.first().json.day_number;\n\nconst splitDaysItems = $items(\"Split Days\");\nconst matched = splitDaysItems.find(\n  item => String(item.json.day_number) === String(dayNumber)\n);\nconst places = matched?.json?.places || [];\n\nif (places.length === 0) return [];\n\nreturn places.map((place, index) => ({\n  json: {\n    day_id: dayId,\n    place_name: place.name || place.place_name || \"\",\n    visit_time: place.time || place.visit_time || \"\",\n    duration_min: place.duration_min || null,\n    description: place.description || \"\",\n    intro: place.intro || \"\",\n    category: place.category || \"景点\",\n    rating: place.rating || null,\n    price: place.price || \"\",\n    tags: Array.isArray(place.tags) ? place.tags.join(\",\") : (place.tags || \"\"),\n    place_order: index + 1,\n    latitude: place.lat || null,\n    longitude: place.lng || null,\n    image_url: \"\",\n    address: place.address || \"\"\n  }\n}));"
+      },
+      "id": "node-split-places",
+      "name": "Split Places",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1540, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": "public",
+        "table": "itinerary_places",
+        "columns": "day_id,place_name,visit_time,duration_min,description,intro,category,rating,price,tags,place_order,latitude,longitude,image_url,address",
+        "options": {
+          "returnFields": "*"
+        }
+      },
+      "id": "node-pg-places",
+      "name": "Postgres Places",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1760, 300],
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "TripCanvas Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Collect all route info to return via webhook response\nconst routeItems = $items(\"Postgres Routes\");\nconst route = routeItems[0]?.json || {};\n\nreturn [{\n  json: {\n    success: true,\n    route_id: route.id,\n    route_title: route.route_title,\n    city: route.city,\n    country: route.country,\n    days_count: route.days_count\n  }\n}];"
+      },
+      "id": "node-build-response",
+      "name": "Build Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1980, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "node-respond",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2200, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "DeepSeek AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek AI": {
+      "main": [
+        [
+          {
+            "node": "Parse Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Route": {
+      "main": [
+        [
+          {
+            "node": "Postgres Routes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Routes": {
+      "main": [
+        [
+          {
+            "node": "Split Days",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Days": {
+      "main": [
+        [
+          {
+            "node": "Postgres Days",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Days": {
+      "main": [
+        [
+          {
+            "node": "Split Places",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Places": {
+      "main": [
+        [
+          {
+            "node": "Postgres Places",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Places": {
+      "main": [
+        [
+          {
+            "node": "Build Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "Routey",
+      "id": "1"
+    }
+  ],
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

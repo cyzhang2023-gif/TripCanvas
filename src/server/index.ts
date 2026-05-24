@@ -5,4 +5,6 @@ export { handleImageRoutes } from "./routes/images";
 export { handleExploreRoutes } from "./routes/explore";
 export { handleQuizRoutes } from "./routes/quiz";
 export { handleN8nRoutes } from "./routes/n8n-routes";
+export { handleHotSpotsRoutes } from "./routes/hot-spots";
+export { handleWeatherRoutes } from "./routes/weather";
 export { apiJson, apiError, getOwnerId } from "./utils";

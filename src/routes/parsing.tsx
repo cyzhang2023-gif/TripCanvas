@@ -21,7 +21,7 @@ function Parsing() {
   useEffect(() => {
     if (job?.status === "done" && job.tripId) {
       const timer = setTimeout(
-        () => nav({ to: "/trip", search: { id: job.tripId, focus: "map" }, replace: true }),
+        () => nav({ to: "/preview", search: { tripId: job.tripId! }, replace: true }),
         600,
       );
       return () => clearTimeout(timer);

@@ -8,6 +8,8 @@ import {
   handleExploreRoutes,
   handleQuizRoutes,
   handleN8nRoutes,
+  handleHotSpotsRoutes,
+  handleWeatherRoutes,
   apiJson,
   apiError,
   getOwnerId,
@@ -99,6 +101,12 @@ async function handleApiRequest(request: Request, env: unknown): Promise<Respons
 
   const n8nResponse = await handleN8nRoutes(pathname, url, request, env, ownerId);
   if (n8nResponse) return n8nResponse;
+
+  const hotSpotsResponse = await handleHotSpotsRoutes(pathname, url, request);
+  if (hotSpotsResponse) return hotSpotsResponse;
+
+  const weatherResponse = await handleWeatherRoutes(pathname, url, request);
+  if (weatherResponse) return weatherResponse;
 
   return apiError(404, "接口不存在");
 }

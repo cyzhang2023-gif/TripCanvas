@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { BottomNav } from "@/components/BottomNav";
+import { HotSpotsSection } from "@/components/HotSpotsSection";
 import { useFeaturedRoutes, useTripActions, type SourceKind } from "@/lib/tripStore";
 import heroImg from "@/assets/hero-santorini-blue.webp";
 import tokyoImg from "@/assets/tokyo-sakura.webp";
@@ -337,6 +338,9 @@ function Index() {
           </button>
         </div>
       </section>
+
+      {/* ══════ 热门景点排行 ══════ */}
+      <HotSpotsSection />
 
       {/* ══════ 旅行日历 ══════ */}
       <section className="mt-3 px-3">

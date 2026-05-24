@@ -147,3 +147,22 @@ export type TravelInfo = {
   mode: "driving" | "walking" | "transit";
   polyline?: number[][]; // [[lng,lat], ...] for map drawing
 };
+
+/* ─── Rating system ─── */
+
+export interface RouteRating {
+  id: string;
+  routeId: string;
+  score: number; // 1-5
+  tags: string[]; // e.g. ["风景绝佳", "性价比高", "适合亲子"]
+  comment?: string;
+  createdAt: string;
+  ownerId: string;
+}
+
+export interface RouteRatingStats {
+  routeId: string;
+  averageScore: number;
+  totalRatings: number;
+  tagCounts: Record<string, number>; // tag -> count
+}

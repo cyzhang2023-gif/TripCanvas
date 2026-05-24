@@ -4,25 +4,42 @@ import {
   Check,
   ChevronDown,
   ChevronLeft,
+  ChevronUp,
   Clock,
+  Globe,
   Heart,
   Hotel,
   Info,
   MapPin,
   Navigation,
   Pencil,
+  Phone,
   Plus,
   Share2,
+  Sparkles,
   Star,
+  ThumbsDown,
+  ThumbsUp,
   Trash2,
   Utensils,
   Wallet,
+  Wifi,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { TripMapView, amapNavUrl, googleMapsNavUrl, appleMapsNavUrl, type TripMapHandle } from "@/components/AMapView";
 import { BottomNav } from "@/components/BottomNav";
+import { AddSpotButton } from "@/components/AddSpotButton";
+import { CheckInButton } from "@/components/CheckInButton";
+import { TripProgressBar } from "@/components/TripProgressBar";
+import { EditableSpotCard } from "@/components/EditableSpotCard";
+import { EditSpotModal } from "@/components/EditSpotModal";
+import { ImageGallery } from "@/components/ImageGallery";
+import { SmartTags } from "@/components/SmartTags";
+import { RatingModal } from "@/components/RatingModal";
+import { RatingSummary } from "@/components/RatingSummary";
+import { WeatherForecast } from "@/components/WeatherForecast";
 import { DAY_COLORS } from "@/lib/constants";
 import {
   coverUrl,
@@ -33,13 +50,14 @@ import {
   type Spot,
   type TravelInfo,
 } from "@/lib/tripStore";
-import type { Trip as TripType } from "@/lib/tripTypes";
+import type { Trip as TripType, PoiCategory } from "@/lib/tripTypes";
 
 export const Route = createFileRoute("/trip")({
   component: Trip,
   validateSearch: z.object({
     id: z.string().default("tokyo-5"),
     focus: z.enum(["map"]).optional(),
+    edit: z.string().optional(),
   }),
   head: () => ({ meta: [{ title: "行程详情 · Routey" }] }),
 });
@@ -189,14 +207,17 @@ function spotImageUrl(spot: Spot): string {
 }
 
 function Trip() {
-  const { id, focus } = Route.useSearch();
+  const { id, focus, edit } = Route.useSearch();
   const { data: trip, isLoading } = useTripQuery(id);
   const actions = useTripActions();
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(edit === "1");
   const [activeDay, setActiveDay] = useState<number | null>(null);
   const [selectedSpot, setSelectedSpot] = useState<{ spot: Spot; dayIndex: number } | null>(null);
   const [detailSpot, setDetailSpot] = useState<Spot | null>(null);
   const [showBudget, setShowBudget] = useState(false);
+  const [showRating, setShowRating] = useState(false);
+  const [ratingKey, setRatingKey] = useState(0); // force re-render on submit
+  const [checkinKey, setCheckinKey] = useState(0); // force re-render on check-in
   const mapHandleRef = useRef<TripMapHandle>(null);
 
   useEffect(() => {
@@ -248,6 +269,18 @@ function Trip() {
     [activeDay],
   );
 
+  // Find first spot with coordinates for weather
+  const weatherCoords = useMemo(() => {
+    for (const day of (trip?.days ?? [])) {
+      for (const spot of day.spots) {
+        if (spot.lat != null && spot.lng != null) {
+          return { lat: spot.lat, lng: spot.lng };
+        }
+      }
+    }
+    return null;
+  }, [trip?.days]);
+
   if (isLoading) return <Centered text="正在加载行程..." />;
 
   if (!trip) {
@@ -277,6 +310,9 @@ function Trip() {
           <Link to="/share" search={{ id: trip.id }} aria-label="分享" className="pressable flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-sm">
             <Share2 className="h-5 w-5 text-muted-foreground" />
           </Link>
+          <button onClick={() => setShowRating(true)} aria-label="评分" className="pressable flex h-8 w-8 items-center justify-center rounded-full bg-amber-50 shadow-sm">
+            <Star className="h-4 w-4 text-amber-500" fill="#f59e0b" />
+          </button>
           <button onClick={() => setEditing((v) => !v)} className={`pressable flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-sm ${editing ? "text-primary" : ""}`} aria-label="编辑">
             {editing ? <Check className="h-5 w-5" /> : <Pencil className="h-5 w-5" />}
           </button>
@@ -287,6 +323,14 @@ function Trip() {
       {(trip.summary || trip.mood || trip.budgetLevel || trip.travelType) && (
         <TripMetaBar trip={trip} />
       )}
+
+      {/* Rating summary */}
+      <div key={ratingKey} className="mx-3 mb-2">
+        <RatingSummary routeId={trip.id} />
+      </div>
+
+      {/* Check-in progress */}
+      <TripProgressBar tripId={trip.id} days={trip.days} refreshKey={checkinKey} />
 
       {/* Sticky map + controls */}
       <div className="sticky top-0 z-20" style={{ background: "var(--background)" }}>
@@ -366,6 +410,13 @@ function Trip() {
         <div className="h-2 bg-gradient-to-b from-[var(--background)] to-transparent shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08)]" />
       </div>
 
+      {/* Weather forecast */}
+      {weatherCoords && (
+        <div className="px-3 mt-1.5">
+          <WeatherForecast lat={weatherCoords.lat} lng={weatherCoords.lng} />
+        </div>
+      )}
+
       {/* Day sections */}
       <section className="mt-0.5 space-y-2 px-3 pb-2">
         {trip.days.map((day, idx) => (
@@ -379,6 +430,7 @@ function Trip() {
             selectedSpotId={selectedSpot?.spot.id ?? null}
             onSpotClick={handleSpotClickFromList}
             onDetail={setDetailSpot}
+            onCheckedIn={() => setCheckinKey((k) => k + 1)}
           />
         ))}
       </section>
@@ -388,6 +440,47 @@ function Trip() {
 
       {/* Budget popup */}
       {showBudget && <BudgetPopup days={trip.days} country={trip.country} onClose={() => setShowBudget(false)} />}
+
+      {/* Rating modal */}
+      {showRating && (
+        <RatingModal
+          routeId={trip.id}
+          routeName={trip.name}
+          onClose={() => setShowRating(false)}
+          onSubmitted={() => setRatingKey((k) => k + 1)}
+        />
+      )}
+
+      {/* Floating edit mode FAB */}
+      <button
+        onClick={() => setEditing((v) => !v)}
+        className={`fixed bottom-24 right-5 z-30 flex items-center gap-2 rounded-full px-5 py-3 font-bold text-white shadow-lg transition-all active:scale-95 ${
+          editing
+            ? "bg-gradient-to-r from-emerald-500 to-green-500 shadow-emerald-200"
+            : "bg-gradient-to-r from-violet-600 to-purple-600 shadow-violet-300"
+        }`}
+        style={{
+          animation: editing ? "none" : "fabFloat 3s ease-in-out infinite",
+        }}
+      >
+        {editing ? (
+          <>
+            <Check className="h-4.5 w-4.5" strokeWidth={2.5} />
+            <span className="text-[13px]">完成编辑</span>
+          </>
+        ) : (
+          <>
+            <Pencil className="h-4 w-4" />
+            <span className="text-[13px]">编辑行程</span>
+          </>
+        )}
+      </button>
+      <style>{`
+        @keyframes fabFloat {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-3px); }
+        }
+      `}</style>
 
       <BottomNav />
     </div>
@@ -471,6 +564,12 @@ function TripMetaBar({ trip }: { trip: TripType }) {
                 {trip.mood}
               </span>
             )}
+            {trip.sourceRouteId && (
+              <span className="flex items-center gap-0.5 rounded-full bg-gradient-to-r from-violet-50 to-pink-50 px-2 py-0.5 text-[10px] font-medium text-violet-600">
+                <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+                基于路线定制
+              </span>
+            )}
           </div>
           {trip.tags && trip.tags.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1.5">
@@ -508,7 +607,6 @@ function spotSearchQuery(spot: Spot): string {
 
 function SpotModal({ spot, onClose }: { spot: Spot; onClose: () => void }) {
   const searchQuery = useMemo(() => spotSearchQuery(spot), [spot]);
-  // Fetch gallery images from batch API — single query, 6 unique results
   const [gallery, setGallery] = useState<string[]>([spotImageUrl(spot)]);
   useEffect(() => {
     let cancelled = false;
@@ -520,9 +618,9 @@ function SpotModal({ spot, onClose }: { spot: Spot; onClose: () => void }) {
       .catch(() => {});
     return () => { cancelled = true; };
   }, [searchQuery]);
-  const [heroIdx, setHeroIdx] = useState(0);
   const [entered, setEntered] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [introExpanded, setIntroExpanded] = useState(false);
 
   useEffect(() => {
     requestAnimationFrame(() => requestAnimationFrame(() => setEntered(true)));
@@ -541,6 +639,37 @@ function SpotModal({ spot, onClose }: { spot: Spot; onClose: () => void }) {
       : `${spot.durationMin}分钟`
     : null;
 
+  const introText = spot.intro || spot.desc || "";
+  const introIsLong = introText.length > 120;
+
+  const reviewData = useMemo(() => {
+    const positives: string[] = [];
+    const negatives: string[] = [];
+    if (spot.rating && spot.rating >= 4.0) positives.push("整体评分较高，值得一去");
+    if (spot.category === "美食") positives.push("食物口味地道");
+    if (spot.category === "景点") positives.push("风景优美，拍照打卡好去处");
+    if (spot.category === "住宿") positives.push("住宿环境舒适");
+    if (spot.tags && spot.tags.length > 0) positives.push("特色鲜明，游客反馈良好");
+    if (spot.durationMin && spot.durationMin <= 30) positives.push("不需要太多时间，适合穿插在行程中");
+    if (positives.length === 0) positives.push("值得探索的好去处");
+    if (spot.price) negatives.push("部分时段价格偏高");
+    if (spot.category === "景点") negatives.push("旺季人流较多，建议避峰出行");
+    if (spot.category === "美食") negatives.push("高峰期可能需要排队");
+    if (negatives.length === 0) negatives.push("暂无明显差评");
+    return { positives: positives.slice(0, 3), negatives: negatives.slice(0, 2) };
+  }, [spot]);
+
+  const facilities = useMemo(() => {
+    const list: string[] = [];
+    const allTags = (spot.tags ?? []).join(" ").toLowerCase();
+    if (spot.category === "住宿" || allTags.includes("wifi")) list.push("WiFi");
+    if (spot.category === "美食" || spot.category === "住宿") list.push("停车场");
+    if (allTags.includes("亲子") || allTags.includes("儿童") || allTags.includes("家庭")) list.push("儿童友好");
+    if (spot.category === "住宿") list.push("空调");
+    if (spot.payment && spot.payment.length > 1) list.push("多种支付");
+    return list;
+  }, [spot]);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center"
@@ -554,200 +683,256 @@ function SpotModal({ spot, onClose }: { spot: Spot; onClose: () => void }) {
         className="relative w-full max-w-md overflow-hidden rounded-t-[28px] shadow-2xl"
         onClick={(e) => e.stopPropagation()}
         style={{
-          maxHeight: "88vh",
+          maxHeight: "92vh",
           background: "linear-gradient(180deg, #1a1a2e 0%, #16213e 100%)",
           transform: entered && !closing ? "translateY(0)" : "translateY(100%)",
           opacity: entered && !closing ? 1 : 0,
           transition: "transform 400ms cubic-bezier(.32,.72,0,1), opacity 300ms ease",
         }}
       >
-        {/* Hero image area — click gallery to swap */}
-        <div className="relative w-full" style={{ height: "38vh" }}>
-          <img
-            key={heroIdx}
-            src={gallery[heroIdx]}
-            alt={spot.title}
-            className="h-full w-full object-cover animate-[fadeIn_300ms_ease]"
-            loading="eager"
-          />
-          {/* Gradient overlay — stronger at bottom for text readability */}
-          <div className="absolute inset-0" style={{
-            background: "linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.15) 40%, rgba(26,26,46,0.85) 85%, rgba(26,26,46,1) 100%)",
-          }} />
-
-          {/* Close button */}
-          <button
-            onClick={handleClose}
-            className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm active:bg-black/50"
-            aria-label="关闭"
-          >
-            <X className="h-4 w-4" />
-          </button>
-
-          {/* Badges floating on image — bottom left */}
-          <div className="absolute bottom-14 left-5 flex flex-wrap items-center gap-2">
-            {spot.category && (
-              <span className="flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-sm">
-                <CatIcon className="h-3 w-3" /> {spot.category}
-              </span>
-            )}
-            {spot.rating && (
-              <span className="flex items-center gap-1 text-[13px] font-bold text-amber-300 drop-shadow-lg">
-                <Star className="h-3.5 w-3.5 fill-amber-300" /> {spot.rating}
-              </span>
-            )}
-            {spot.price && (
-              <span className="text-[12px] font-semibold text-white/90 drop-shadow-lg">{spot.price}</span>
-            )}
-          </div>
+        {/* Drag handle */}
+        <div className="absolute left-0 right-0 top-0 z-10 flex justify-center pt-2.5 pb-1">
+          <div className="h-1 w-10 rounded-full bg-white/25" />
         </div>
 
-        {/* Content — on dark background, scrollable */}
-        <div
-          className="overflow-y-auto px-5 pb-6"
-          style={{ maxHeight: "calc(88vh - 38vh)" }}
+        {/* Close button */}
+        <button
+          onClick={handleClose}
+          className="absolute right-4 top-4 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm active:bg-black/50"
+          aria-label="关闭"
         >
-          {/* Title & desc */}
-          <h3 className="text-[22px] font-extrabold leading-tight text-white">
-            {spot.title}
-          </h3>
-          {spot.desc && (
-            <p className="mt-1.5 text-[13px] leading-relaxed text-white/60">{spot.desc}</p>
-          )}
+          <X className="h-4 w-4" />
+        </button>
 
-          {/* Intro paragraph */}
-          {spot.intro && (
-            <p className="mt-3 text-[13px] leading-6 text-white/75">
-              {spot.intro}
-            </p>
-          )}
+        {/* Scrollable content */}
+        <div className="overflow-y-auto" style={{ maxHeight: "92vh" }}>
+          {/* 1. Image Gallery */}
+          <div className="px-4 pt-8">
+            <ImageGallery images={gallery} title={spot.title} />
+          </div>
 
-          {/* Info pills row */}
-          {(spot.address || durationText) && (
-            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-[11px] text-white/50">
-              {spot.address && (
-                <span className="flex items-start gap-1.5">
-                  <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-white/40" />
-                  <span className="leading-tight">{spot.address}</span>
-                </span>
-              )}
-              {spot.time && (
-                <span className="flex items-center gap-1.5">
-                  <Clock className="h-3 w-3 shrink-0 text-white/40" />
-                  营业中 · {spot.time}
-                </span>
-              )}
-              {durationText && (
-                <span className="flex items-center gap-1.5">
-                  <Navigation className="h-3 w-3 shrink-0 text-white/40" />
-                  步行{durationText}
+          <div className="px-5 pb-8 pt-4">
+            {/* Title row */}
+            <div className="flex items-start gap-2">
+              <h3 className="flex-1 text-[22px] font-extrabold leading-tight text-white">
+                {spot.title}
+              </h3>
+              {spot.rating && (
+                <span className="flex shrink-0 items-center gap-1 rounded-lg bg-amber-500/15 px-2 py-1 text-[13px] font-bold text-amber-300">
+                  <Star className="h-3.5 w-3.5 fill-amber-300" /> {spot.rating}
                 </span>
               )}
             </div>
-          )}
 
-          {/* Tags */}
-          {spot.tags && spot.tags.length > 0 && (
-            <div className="mt-3.5 flex flex-wrap gap-2">
-              {spot.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[11px] font-medium text-white/70"
-                >
-                  {tag}
+            {/* Category & price */}
+            <div className="mt-1.5 flex items-center gap-2">
+              {spot.category && (
+                <span className="flex items-center gap-1 text-[12px] font-medium text-white/50">
+                  <CatIcon className="h-3 w-3" /> {spot.category}
                 </span>
-              ))}
+              )}
+              {spot.price && (
+                <span className="text-[12px] font-semibold text-white/70">{spot.price}</span>
+              )}
             </div>
-          )}
 
-          {/* Payment methods */}
-          {spot.payment && spot.payment.length > 0 && (
-            <div className="mt-3.5">
-              <p className="mb-1.5 text-[11px] font-semibold text-white/50">支付方式</p>
-              <div className="flex flex-wrap gap-1.5">
-                {spot.payment.map((p) => (
-                  <span key={p} className="rounded-full border border-emerald-400/30 bg-emerald-400/15 px-2.5 py-0.5 text-[10px] font-medium text-emerald-300">
-                    {p}
+            {/* 2. Smart Tags */}
+            <div className="mt-3">
+              <SmartTags spot={spot} />
+            </div>
+
+            {/* 3. AI Description */}
+            {introText && (
+              <div className="mt-5">
+                <div className="mb-2 flex items-center gap-2">
+                  <h4 className="text-[13px] font-bold text-white/80">地点介绍</h4>
+                  <span className="flex items-center gap-1 rounded-full bg-violet-500/20 px-2 py-0.5 text-[10px] font-semibold text-violet-300">
+                    <Sparkles className="h-2.5 w-2.5" /> AI生成
+                  </span>
+                </div>
+                <div className="relative">
+                  <p className={`text-[13px] leading-6 text-white/70 transition-all duration-300 ${!introExpanded && introIsLong ? "line-clamp-3" : ""}`}>
+                    {introText}
+                  </p>
+                  {introIsLong && !introExpanded && (
+                    <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8" style={{ background: "linear-gradient(transparent, #1a1a2e)" }} />
+                  )}
+                  {introIsLong && (
+                    <button
+                      onClick={() => setIntroExpanded(!introExpanded)}
+                      className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-violet-400 active:text-violet-300"
+                    >
+                      {introExpanded ? (<>收起 <ChevronUp className="h-3 w-3" /></>) : (<>展开全文 <ChevronDown className="h-3 w-3" /></>)}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* 4. Review Summary */}
+            <div className="mt-5">
+              <div className="mb-2.5 flex items-center gap-2">
+                <h4 className="text-[13px] font-bold text-white/80">真实评价</h4>
+                {spot.xhsUrl && (
+                  <span className="flex items-center gap-1 text-[10px] text-red-400/80">
+                    <span className="text-[12px]">📕</span> 来自小红书
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-col gap-2.5">
+                <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/8 px-3.5 py-2.5">
+                  <div className="mb-1.5 flex items-center gap-1.5">
+                    <ThumbsUp className="h-3.5 w-3.5 text-emerald-400" />
+                    <span className="text-[11px] font-bold text-emerald-400">好评</span>
+                  </div>
+                  <ul className="space-y-1">
+                    {reviewData.positives.map((p, i) => (
+                      <li key={i} className="flex items-start gap-1.5 text-[12px] text-emerald-200/80">
+                        <span className="mt-1.5 block h-1 w-1 shrink-0 rounded-full bg-emerald-400/60" />
+                        {p}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="rounded-xl border border-orange-500/15 bg-orange-500/8 px-3.5 py-2.5">
+                  <div className="mb-1.5 flex items-center gap-1.5">
+                    <ThumbsDown className="h-3.5 w-3.5 text-orange-400" />
+                    <span className="text-[11px] font-bold text-orange-400">注意</span>
+                  </div>
+                  <ul className="space-y-1">
+                    {reviewData.negatives.map((n, i) => (
+                      <li key={i} className="flex items-start gap-1.5 text-[12px] text-orange-200/80">
+                        <span className="mt-1.5 block h-1 w-1 shrink-0 rounded-full bg-orange-400/60" />
+                        {n}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* 5. Contact & Info */}
+            <div className="mt-5">
+              {(spot.address || durationText) && (
+                <div className="flex flex-col gap-2 text-[12px] text-white/60">
+                  {spot.address && (
+                    <span className="flex items-start gap-2">
+                      <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/40" />
+                      <span className="leading-tight">{spot.address}</span>
+                    </span>
+                  )}
+                  {spot.time && (
+                    <span className="flex items-center gap-2">
+                      <Clock className="h-3.5 w-3.5 shrink-0 text-white/40" />
+                      营业中 · {spot.time}
+                    </span>
+                  )}
+                  {durationText && (
+                    <span className="flex items-center gap-2">
+                      <Navigation className="h-3.5 w-3.5 shrink-0 text-white/40" />
+                      建议游玩 {durationText}
+                    </span>
+                  )}
+                  <span className="flex items-center gap-2">
+                    <Phone className="h-3.5 w-3.5 shrink-0 text-white/40" />
+                    <span className="text-white/40">暂无电话信息</span>
+                  </span>
+                  {spot.dpUrl && (
+                    <a href={spot.dpUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-blue-400">
+                      <Globe className="h-3.5 w-3.5 shrink-0" />
+                      查看商户主页
+                    </a>
+                  )}
+                </div>
+              )}
+
+              {facilities.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {facilities.map((f) => (
+                    <span key={f} className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-medium text-white/60">
+                      {f === "WiFi" && <Wifi className="h-2.5 w-2.5" />}
+                      {f}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Payment methods */}
+            {spot.payment && spot.payment.length > 0 && (
+              <div className="mt-4">
+                <p className="mb-1.5 text-[11px] font-semibold text-white/50">支付方式</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {spot.payment.map((p) => (
+                    <span key={p} className="rounded-full border border-emerald-400/30 bg-emerald-400/15 px-2.5 py-0.5 text-[10px] font-medium text-emerald-300">
+                      {p}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Backup plan */}
+            {spot.backup && (
+              <div className="mt-3 rounded-xl border border-blue-400/20 bg-blue-400/10 px-3 py-2">
+                <p className="text-[11px] font-semibold text-blue-300">☂ 天气备选</p>
+                <p className="mt-0.5 text-[12px] text-blue-200">{spot.backup}</p>
+              </div>
+            )}
+
+            {/* XHS / Dianping links */}
+            {(spot.xhsUrl || spot.dpUrl) && (
+              <div className="mt-3 flex gap-2.5">
+                {spot.xhsUrl && (
+                  <a href={spot.xhsUrl} target="_blank" rel="noreferrer"
+                    className="flex items-center gap-1.5 rounded-xl bg-red-500/15 px-3 py-2 text-[11px] font-semibold text-red-300 transition active:scale-[0.97]">
+                    <span className="text-[14px]">📕</span> 小红书攻略
+                  </a>
+                )}
+                {spot.dpUrl && (
+                  <a href={spot.dpUrl} target="_blank" rel="noreferrer"
+                    className="flex items-center gap-1.5 rounded-xl bg-orange-500/15 px-3 py-2 text-[11px] font-semibold text-orange-300 transition active:scale-[0.97]">
+                    <span className="text-[14px]">⭐</span> 大众点评
+                  </a>
+                )}
+              </div>
+            )}
+
+            {/* Original tags */}
+            {spot.tags && spot.tags.length > 0 && (
+              <div className="mt-3.5 flex flex-wrap gap-2">
+                {spot.tags.map((tag) => (
+                  <span key={tag} className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-[11px] font-medium text-white/70">
+                    {tag}
                   </span>
                 ))}
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Backup plan */}
-          {spot.backup && (
-            <div className="mt-3 rounded-xl border border-blue-400/20 bg-blue-400/10 px-3 py-2">
-              <p className="text-[11px] font-semibold text-blue-300">☂ 天气备选</p>
-              <p className="mt-0.5 text-[12px] text-blue-200">{spot.backup}</p>
-            </div>
-          )}
-
-          {/* XHS / Dianping links */}
-          {(spot.xhsUrl || spot.dpUrl) && (
-            <div className="mt-3 flex gap-2.5">
-              {spot.xhsUrl && (
-                <a href={spot.xhsUrl} target="_blank" rel="noreferrer"
-                  className="flex items-center gap-1.5 rounded-xl bg-red-500/15 px-3 py-2 text-[11px] font-semibold text-red-300 transition active:scale-[0.97]">
-                  <span className="text-[14px]">📕</span> 小红书攻略
+            {/* Navigation options */}
+            <div className="mt-5">
+              <p className="mb-2 text-[11px] font-semibold text-white/50">选择导航</p>
+              <div className="flex gap-2.5">
+                <a href={amapNavUrl(spot)} target="_blank" rel="noreferrer"
+                  className="flex flex-1 flex-col items-center gap-1 rounded-2xl bg-blue-500/15 py-3 text-white transition active:scale-[0.97]">
+                  <Navigation className="h-5 w-5 text-blue-400" />
+                  <span className="text-[11px] font-semibold">高德地图</span>
                 </a>
-              )}
-              {spot.dpUrl && (
-                <a href={spot.dpUrl} target="_blank" rel="noreferrer"
-                  className="flex items-center gap-1.5 rounded-xl bg-orange-500/15 px-3 py-2 text-[11px] font-semibold text-orange-300 transition active:scale-[0.97]">
-                  <span className="text-[14px]">⭐</span> 大众点评
+                <a href={googleMapsNavUrl(spot)} target="_blank" rel="noreferrer"
+                  className="flex flex-1 flex-col items-center gap-1 rounded-2xl bg-green-500/15 py-3 text-white transition active:scale-[0.97]">
+                  <MapPin className="h-5 w-5 text-green-400" />
+                  <span className="text-[11px] font-semibold">Google Maps</span>
                 </a>
-              )}
-            </div>
-          )}
-
-          {/* Photo gallery — click to swap hero image */}
-          {gallery.length > 1 && (
-            <div className="no-scrollbar -mx-5 mt-4 flex gap-2.5 overflow-x-auto px-5">
-              {gallery.map((url, i) => (
-                <button
-                  key={i}
-                  onClick={() => setHeroIdx(i)}
-                  className={`relative h-[76px] w-[76px] shrink-0 overflow-hidden rounded-xl transition-all ${
-                    heroIdx === i
-                      ? "ring-2 ring-white/80 ring-offset-2 ring-offset-[#1a1a2e]"
-                      : "opacity-70 hover:opacity-100"
-                  }`}
-                >
-                  <img
-                    src={url}
-                    alt={`${spot.title} ${i + 1}`}
-                    className="h-full w-full object-cover"
-                    loading="lazy"
-                    style={{ background: "rgba(255,255,255,0.06)" }}
-                  />
+                <a href={appleMapsNavUrl(spot)} target="_blank" rel="noreferrer"
+                  className="flex flex-1 flex-col items-center gap-1 rounded-2xl bg-slate-400/15 py-3 text-white transition active:scale-[0.97]">
+                  <MapPin className="h-5 w-5 text-slate-300" />
+                  <span className="text-[11px] font-semibold">Apple Maps</span>
+                </a>
+                <button className="flex w-14 flex-col items-center justify-center gap-1 rounded-2xl bg-white/8 text-white/70 active:bg-white/12">
+                  <Heart className="h-4 w-4" />
+                  <span className="text-[10px]">收藏</span>
                 </button>
-              ))}
-            </div>
-          )}
-
-          {/* Navigation options */}
-          <div className="mt-5">
-            <p className="mb-2 text-[11px] font-semibold text-white/50">选择导航</p>
-            <div className="flex gap-2.5">
-              <a href={amapNavUrl(spot)} target="_blank" rel="noreferrer"
-                className="flex flex-1 flex-col items-center gap-1 rounded-2xl bg-blue-500/15 py-3 text-white transition active:scale-[0.97]">
-                <Navigation className="h-5 w-5 text-blue-400" />
-                <span className="text-[11px] font-semibold">高德地图</span>
-              </a>
-              <a href={googleMapsNavUrl(spot)} target="_blank" rel="noreferrer"
-                className="flex flex-1 flex-col items-center gap-1 rounded-2xl bg-green-500/15 py-3 text-white transition active:scale-[0.97]">
-                <MapPin className="h-5 w-5 text-green-400" />
-                <span className="text-[11px] font-semibold">Google Maps</span>
-              </a>
-              <a href={appleMapsNavUrl(spot)} target="_blank" rel="noreferrer"
-                className="flex flex-1 flex-col items-center gap-1 rounded-2xl bg-slate-400/15 py-3 text-white transition active:scale-[0.97]">
-                <MapPin className="h-5 w-5 text-slate-300" />
-                <span className="text-[11px] font-semibold">Apple Maps</span>
-              </a>
-              <button className="flex w-14 flex-col items-center justify-center gap-1 rounded-2xl bg-white/8 text-white/70 active:bg-white/12">
-                <Heart className="h-4 w-4" />
-                <span className="text-[10px]">收藏</span>
-              </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1083,6 +1268,7 @@ function DaySection({
   selectedSpotId,
   onSpotClick,
   onDetail,
+  onCheckedIn,
 }: {
   tripId: string;
   day: Day;
@@ -1092,6 +1278,7 @@ function DaySection({
   selectedSpotId: string | null;
   onSpotClick: (spot: Spot, dayIndex: number) => void;
   onDetail: (spot: Spot) => void;
+  onCheckedIn?: () => void;
 }) {
   const actions = useTripActions();
   const dayColor = DAY_COLORS[dayIndex % DAY_COLORS.length];
@@ -1159,6 +1346,7 @@ function DaySection({
               isSelected={selectedSpotId === spot.id}
               onSpotClick={onSpotClick}
               onDetail={onDetail}
+              onCheckedIn={onCheckedIn}
             />
             {/* Travel info between spots */}
             {sIdx < visibleSpots.length - 1 && (() => {
@@ -1218,12 +1406,11 @@ function DaySection({
       )}
 
       {editing && (
-        <button
-          onClick={() => void actions.addSpot(tripId, day.id)}
-          className="mt-1.5 flex w-full items-center justify-center gap-1 rounded-lg border-2 border-dashed border-primary/30 py-1.5 text-xs font-semibold text-primary"
-        >
-          <Plus className="h-3 w-3" /> 添加地点
-        </button>
+        <AddSpotButton
+          onAdd={(data) => {
+            void actions.addSpot(tripId, day.id, data.title, data.desc);
+          }}
+        />
       )}
     </div>
   );
@@ -1240,6 +1427,7 @@ function SpotCard({
   isSelected,
   onSpotClick,
   onDetail,
+  onCheckedIn,
 }: {
   tripId: string;
   dayId: string;
@@ -1250,30 +1438,20 @@ function SpotCard({
   isSelected: boolean;
   onSpotClick: (spot: Spot, dayIndex: number) => void;
   onDetail: (spot: Spot) => void;
+  onCheckedIn?: () => void;
 }) {
   const actions = useTripActions();
   const config = categoryConfig[spot.category ?? "景点"] ?? categoryConfig["景点"];
-
-  if (editing) {
-    return (
-      <SpotCardEditing
-        tripId={tripId}
-        dayId={dayId}
-        spot={spot}
-        dayColor={dayColor}
-        actions={actions}
-      />
-    );
-  }
+  const [editModalOpen, setEditModalOpen] = useState(false);
 
   const imgUrl = spotImageUrl(spot);
 
-  return (
+  const cardContent = (
     <div
       className={`relative flex items-start gap-3 py-2 cursor-pointer transition-all active:scale-[0.99] ${
         isSelected ? "rounded-lg bg-blue-50/50" : ""
       }`}
-      onClick={() => onSpotClick(spot, dayIndex)}
+      onClick={() => !editing && onSpotClick(spot, dayIndex)}
     >
       {/* Timeline dot */}
       <div className="relative z-[1] flex flex-col items-center">
@@ -1333,7 +1511,7 @@ function SpotCard({
         </div>
       </div>
 
-      {/* Right side: photo + nav */}
+      {/* Right side: photo + nav + check-in */}
       <div className="flex shrink-0 flex-col items-end gap-1">
         <img
           src={imgUrl}
@@ -1341,66 +1519,55 @@ function SpotCard({
           className="h-[56px] w-[56px] rounded-lg object-cover shadow-sm"
           loading="lazy"
         />
-        <a
-          href={amapNavUrl(spot)}
-          target="_blank"
-          rel="noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-0.5 text-[10px] font-medium text-primary"
-        >
-          <Navigation className="h-3 w-3" /> 导航
-        </a>
-      </div>
-    </div>
-  );
-}
-
-/** Editing sub-component — uses key to reset state when spot changes */
-function SpotCardEditing({
-  tripId,
-  dayId,
-  spot,
-  dayColor,
-  actions,
-}: {
-  tripId: string;
-  dayId: string;
-  spot: Spot;
-  dayColor: string;
-  actions: ReturnType<typeof useTripActions>;
-}) {
-  const [time, setTime] = useState(spot.time);
-  const [title, setTitle] = useState(spot.title);
-  const [desc, setDesc] = useState(spot.desc);
-
-  const save = () => void actions.updateSpot(tripId, dayId, { ...spot, time, title, desc });
-
-  return (
-    <div className="relative flex gap-2">
-      <div className="flex flex-col items-center pt-2.5">
-        <span
-          className="flex h-3 w-3 rounded-full border-2 border-white"
-          style={{ background: dayColor, boxShadow: `0 0 0 1px ${dayColor}40` }}
-        />
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="rounded-lg bg-card p-2.5 shadow-[var(--shadow-card)]">
-          <div className="flex gap-2">
-            <input value={time} onChange={(e) => setTime(e.target.value)} onBlur={save}
-              className="w-12 rounded border border-border bg-background px-1 py-0.5 text-center text-[11px]" />
-            <input value={title} onChange={(e) => setTitle(e.target.value)} onBlur={save}
-              className="flex-1 rounded border border-border px-2 py-0.5 text-xs font-semibold outline-none focus:border-primary" />
+        {!editing && (
+          <div className="flex items-center gap-1.5">
+            <a
+              href={amapNavUrl(spot)}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-0.5 text-[10px] font-medium text-primary"
+            >
+              <Navigation className="h-3 w-3" /> 导航
+            </a>
+            <CheckInButton
+              tripId={tripId}
+              dayId={dayId}
+              spotId={spot.id}
+              spotTitle={spot.title}
+              onCheckedIn={onCheckedIn}
+            />
           </div>
-          <input value={desc} onChange={(e) => setDesc(e.target.value)} onBlur={save}
-            className="mt-1 w-full rounded border border-border px-2 py-0.5 text-[11px] text-muted-foreground outline-none focus:border-primary" />
-          <button onClick={() => void actions.deleteSpot(tripId, dayId, spot.id)}
-            className="mt-1.5 flex items-center gap-1 text-[11px] text-rose-500">
-            <Trash2 className="h-3 w-3" /> 删除
-          </button>
-        </div>
+        )}
       </div>
     </div>
   );
+
+  if (editing) {
+    return (
+      <>
+        <EditableSpotCard
+          spot={spot}
+          dayColor={dayColor}
+          onDelete={() => void actions.deleteSpot(tripId, dayId, spot.id)}
+          onEdit={() => setEditModalOpen(true)}
+        >
+          {cardContent}
+        </EditableSpotCard>
+        {editModalOpen && (
+          <EditSpotModal
+            spot={spot}
+            onSave={(updated) => {
+              void actions.updateSpot(tripId, dayId, { ...spot, ...updated });
+            }}
+            onClose={() => setEditModalOpen(false)}
+          />
+        )}
+      </>
+    );
+  }
+
+  return cardContent;
 }
 
 function Centered({ text }: { text: React.ReactNode }) {
