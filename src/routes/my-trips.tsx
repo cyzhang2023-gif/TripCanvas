@@ -98,7 +98,7 @@ function TripCard({ trip }: { trip: Trip }) {
 
   const statusStyle =
     trip.status === "进行中"
-      ? "bg-violet-500/90"
+      ? "bg-[#e8614d]/90"
       : trip.status === "已完成"
         ? "bg-gray-400/90"
         : "bg-amber-500/90";

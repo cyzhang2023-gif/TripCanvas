@@ -15,12 +15,12 @@ export function AddSpotButton({ onAdd }: AddSpotButtonProps) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="group mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-violet-300 py-3 text-[12px] font-bold text-violet-500 transition-all hover:border-violet-400 hover:bg-violet-50 active:scale-[0.98]"
+        className="group mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[#e8614d]/40 py-3 text-[12px] font-bold text-[#e8614d] transition-all hover:border-[#e8614d]/80 hover:bg-[#fff0ed] active:scale-[0.98]"
         style={{
           animation: "pulseGlow 2s ease-in-out infinite",
         }}
       >
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-100 text-violet-600 transition-transform group-hover:scale-110">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#fff0ed] text-[#d4532e] transition-transform group-hover:scale-110">
           <Plus className="h-3.5 w-3.5" strokeWidth={3} />
         </span>
         添加地点
@@ -38,8 +38,8 @@ export function AddSpotButton({ onAdd }: AddSpotButtonProps) {
 
       <style>{`
         @keyframes pulseGlow {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
-          50% { box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1); }
+          0%, 100% { box-shadow: 0 0 0 0 rgba(232, 97, 77, 0); }
+          50% { box-shadow: 0 0 0 4px rgba(232, 97, 77, 0.1); }
         }
       `}</style>
     </>
@@ -120,7 +120,7 @@ function AddSpotModal({
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-100"
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition focus:border-[#e8614d]/80 focus:bg-white focus:ring-2 focus:ring-[#fff0ed]"
               placeholder="输入地点名称"
               autoFocus
             />
@@ -134,7 +134,7 @@ function AddSpotModal({
             <input
               value={desc}
               onChange={(e) => setDesc(e.target.value)}
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-[13px] text-slate-700 outline-none transition focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-100"
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-[13px] text-slate-700 outline-none transition focus:border-[#e8614d]/80 focus:bg-white focus:ring-2 focus:ring-[#fff0ed]"
               placeholder="简短描述（选填）"
             />
           </div>
@@ -147,7 +147,7 @@ function AddSpotModal({
             <input
               value={time}
               onChange={(e) => setTime(e.target.value)}
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-[14px] text-slate-900 outline-none transition focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-100"
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-[14px] text-slate-900 outline-none transition focus:border-[#e8614d]/80 focus:bg-white focus:ring-2 focus:ring-[#fff0ed]"
               placeholder="例如: 10:00"
             />
           </div>
@@ -164,7 +164,7 @@ function AddSpotModal({
                   onClick={() => setCategory(cat)}
                   className={`rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition-all ${
                     category === cat
-                      ? "bg-violet-600 text-white shadow-md shadow-violet-200"
+                      ? "bg-[#d4532e] text-white shadow-md shadow-[#e8614d]/20"
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >
@@ -185,7 +185,7 @@ function AddSpotModal({
             <button
               onClick={handleSave}
               disabled={!title.trim()}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 py-3 text-[13px] font-bold text-white shadow-lg shadow-violet-200 transition active:scale-[0.98] disabled:opacity-50"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#d4532e] to-[#d4532e] py-3 text-[13px] font-bold text-white shadow-lg shadow-[#e8614d]/20 transition active:scale-[0.98] disabled:opacity-50"
             >
               <Save className="h-4 w-4" /> 添加
             </button>

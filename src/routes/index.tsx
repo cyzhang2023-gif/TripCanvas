@@ -59,13 +59,13 @@ const categories = [
   { icon: Mountain, label: "自然风光", sub: "山川湖海", tint: "bg-emerald-100 text-emerald-600", cat: "nature" },
   { icon: Users, label: "亲子家庭", sub: "寓教于乐", tint: "bg-amber-100 text-amber-600", cat: "family" },
   { icon: Building2, label: "城市漫游", sub: "街拍美食", tint: "bg-sky-100 text-sky-600", cat: "city" },
-  { icon: Landmark, label: "文化探索", sub: "历史人文", tint: "bg-violet-100 text-violet-600", cat: "culture" },
+  { icon: Landmark, label: "文化探索", sub: "历史人文", tint: "bg-indigo-100 text-indigo-600", cat: "culture" },
   { icon: TreePine, label: "户外探险", sub: "徒步露营", tint: "bg-green-100 text-green-600", cat: "outdoor" },
   { icon: Heart, label: "蜜月旅行", sub: "浪漫时光", tint: "bg-rose-100 text-rose-600", cat: "couple" },
 ];
 
 const calendar = [
-  { month: "5月", title: "北海道薰衣草季", date: "5–7月", img: lavenderImg, color: "from-violet-400 to-purple-500", dest: "北海道" },
+  { month: "5月", title: "北海道薰衣草季", date: "5–7月", img: lavenderImg, color: "from-rose-400 to-pink-500", dest: "北海道" },
   { month: "6月", title: "欧洲音乐节季", date: "6–8月", img: festivalImg, color: "from-pink-400 to-rose-500", dest: "西班牙" },
   { month: "7月", title: "夏威夷冲浪季", date: "7–9月", img: surfImg, color: "from-cyan-400 to-teal-500", dest: "夏威夷" },
   { month: "8月", title: "北极观鲸季", date: "8–10月", img: whaleImg, color: "from-amber-400 to-orange-500", dest: "冰岛" },
@@ -319,7 +319,7 @@ function Index() {
 
       {/* ══════ 你可能喜欢 ══════ */}
       <section className="mt-3 px-3">
-        <h2 className="text-[13px] font-bold px-1">你可能喜欢</h2>
+        <h2 className="text-[14px] font-bold px-1">你可能喜欢</h2>
         <div className="mt-1.5 flex gap-1.5 overflow-x-auto no-scrollbar">
           {categories.map(({ icon: Icon, label, sub, tint, cat }) => (
             <Link key={label} to="/explore" search={{ cat }}

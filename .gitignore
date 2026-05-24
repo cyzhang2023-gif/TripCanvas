@@ -26,6 +26,11 @@ dist-ssr
 .dev.vars
 .routey-data/
 
+# Large / non-source files
+*.zip
+*.png
+UI设计图/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

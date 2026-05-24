@@ -148,7 +148,7 @@ export function RatingModal({
                         animation: entered ? `tagEnter 300ms ${i * 40}ms both` : undefined,
                         borderColor: isSelected ? "transparent" : "#e5e7eb",
                         background: isSelected
-                          ? "linear-gradient(135deg, #8b5cf6, #6366f1)"
+                          ? "linear-gradient(135deg, #e8614d, #d4532e)"
                           : "white",
                         color: isSelected ? "white" : "#4b5563",
                         transform: isSelected ? "scale(1.02)" : "scale(1)",
@@ -174,7 +174,7 @@ export function RatingModal({
                 placeholder="分享你的旅行体验..."
                 maxLength={300}
                 rows={3}
-                className="w-full resize-none rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-[13px] text-gray-700 placeholder-gray-400 outline-none transition-colors focus:border-violet-300 focus:bg-white"
+                className="w-full resize-none rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-[13px] text-gray-700 placeholder-gray-400 outline-none transition-colors focus:border-[#e8614d]/40 focus:bg-white"
               />
               <p className="mt-1 text-right text-[10px] text-gray-400">
                 {comment.length}/300
@@ -189,10 +189,10 @@ export function RatingModal({
               className="mt-4 flex h-[48px] w-full items-center justify-center rounded-2xl text-[15px] font-bold text-white shadow-lg transition-all duration-200 disabled:opacity-50"
               style={{
                 background: score > 0
-                  ? "linear-gradient(135deg, #8b5cf6, #4f46e5)"
+                  ? "linear-gradient(135deg, #e8614d, #c44a2d)"
                   : "#d1d5db",
                 boxShadow: score > 0
-                  ? "0 8px 24px rgba(79,70,229,0.3)"
+                  ? "0 8px 24px rgba(212,83,46,0.3)"
                   : "none",
               }}
             >
@@ -227,7 +227,7 @@ function SuccessView() {
             key={deg}
             className="absolute h-2 w-2 rounded-full"
             style={{
-              background: i % 2 === 0 ? "#F59E0B" : "#8b5cf6",
+              background: i % 2 === 0 ? "#F59E0B" : "#e8614d",
               transform: `rotate(${deg}deg) translateY(-32px)`,
               animation: `sparkle 600ms ${i * 60}ms ease-out both`,
             }}

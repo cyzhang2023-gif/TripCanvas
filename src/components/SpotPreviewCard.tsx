@@ -5,7 +5,7 @@ const categoryColors: Record<string, string> = {
   景点: "text-emerald-600",
   美食: "text-orange-600",
   购物: "text-pink-600",
-  休闲: "text-violet-600",
+  休闲: "text-[#d4532e]",
 };
 
 type SpotPreviewCardProps = {

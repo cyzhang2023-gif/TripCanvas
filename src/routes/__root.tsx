@@ -115,7 +115,7 @@ function RouteProgressBar() {
       <div
         className="h-full rounded-r-full"
         style={{
-          background: "linear-gradient(90deg, #7c6dff, #5b45f3, #4a36ef)",
+          background: "linear-gradient(90deg, #e8614d, #d4532e, #c44a2d)",
           animation: "routey-progress 1.8s ease-in-out infinite",
         }}
       />

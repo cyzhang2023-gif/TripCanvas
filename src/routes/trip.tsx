@@ -67,7 +67,7 @@ const categoryConfig: Record<string, { icon: typeof MapPin; color: string; bg: s
   美食: { icon: Utensils, color: "text-orange-600", bg: "bg-orange-50" },
   购物: { icon: MapPin, color: "text-pink-600", bg: "bg-pink-50" },
   住宿: { icon: Hotel, color: "text-emerald-600", bg: "bg-emerald-50" },
-  休闲: { icon: MapPin, color: "text-violet-600", bg: "bg-violet-50" },
+  休闲: { icon: MapPin, color: "text-[#d4532e]", bg: "bg-orange-50" },
 };
 
 /* ─── Budget & travel time helpers ─── */
@@ -457,7 +457,7 @@ function Trip() {
         className={`fixed bottom-24 right-5 z-30 flex items-center gap-2 rounded-full px-5 py-3 font-bold text-white shadow-lg transition-all active:scale-95 ${
           editing
             ? "bg-gradient-to-r from-emerald-500 to-green-500 shadow-emerald-200"
-            : "bg-gradient-to-r from-violet-600 to-purple-600 shadow-violet-300"
+            : "bg-gradient-to-r from-[#d4532e] to-[#e8614d] shadow-[#e8614d]/30"
         }`}
         style={{
           animation: editing ? "none" : "fabFloat 3s ease-in-out infinite",
@@ -560,12 +560,12 @@ function TripMetaBar({ trip }: { trip: TripType }) {
               </span>
             )}
             {trip.mood && (
-              <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-medium text-violet-700">
+              <span className="rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-medium text-[#d4532e]">
                 {trip.mood}
               </span>
             )}
             {trip.sourceRouteId && (
-              <span className="flex items-center gap-0.5 rounded-full bg-gradient-to-r from-violet-50 to-pink-50 px-2 py-0.5 text-[10px] font-medium text-violet-600">
+              <span className="flex items-center gap-0.5 rounded-full bg-gradient-to-r from-orange-50 to-pink-50 px-2 py-0.5 text-[10px] font-medium text-[#d4532e]">
                 <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
                 基于路线定制
               </span>
@@ -746,7 +746,7 @@ function SpotModal({ spot, onClose }: { spot: Spot; onClose: () => void }) {
               <div className="mt-5">
                 <div className="mb-2 flex items-center gap-2">
                   <h4 className="text-[13px] font-bold text-white/80">地点介绍</h4>
-                  <span className="flex items-center gap-1 rounded-full bg-violet-500/20 px-2 py-0.5 text-[10px] font-semibold text-violet-300">
+                  <span className="flex items-center gap-1 rounded-full bg-[#e8614d]/20 px-2 py-0.5 text-[10px] font-semibold text-[#e8614d]/70">
                     <Sparkles className="h-2.5 w-2.5" /> AI生成
                   </span>
                 </div>
@@ -760,7 +760,7 @@ function SpotModal({ spot, onClose }: { spot: Spot; onClose: () => void }) {
                   {introIsLong && (
                     <button
                       onClick={() => setIntroExpanded(!introExpanded)}
-                      className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-violet-400 active:text-violet-300"
+                      className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-[#e8614d]/80 active:text-[#e8614d]/60"
                     >
                       {introExpanded ? (<>收起 <ChevronUp className="h-3 w-3" /></>) : (<>展开全文 <ChevronDown className="h-3 w-3" /></>)}
                     </button>
@@ -1094,13 +1094,13 @@ function BudgetPopup({ days, country, onClose }: { days: Day[]; country?: string
             <div className="flex items-start gap-2">
               {/* Mini calculator illustration */}
               <div className="flex flex-col items-center">
-                <div className="rounded-xl bg-gradient-to-br from-violet-100 to-violet-200 p-2">
-                  <div className="rounded-lg bg-violet-700 px-2 py-0.5 text-[10px] font-bold text-white">
+                <div className="rounded-xl bg-gradient-to-br from-orange-100 to-orange-200 p-2">
+                  <div className="rounded-lg bg-[#d4532e] px-2 py-0.5 text-[10px] font-bold text-white">
                     {formatCurrency(grandTotal, tripCurrency)}
                   </div>
                   <div className="mt-1 grid grid-cols-3 gap-0.5">
                     {[...Array(6)].map((_, i) => (
-                      <div key={i} className="h-1.5 w-2 rounded-sm bg-violet-300" />
+                      <div key={i} className="h-1.5 w-2 rounded-sm bg-[#e8614d]/30" />
                     ))}
                   </div>
                 </div>
@@ -1248,7 +1248,7 @@ function BudgetPopup({ days, country, onClose }: { days: Day[]; country?: string
           </div>
 
           {/* Footer disclaimer */}
-          <div className="mt-4 flex items-center gap-2 rounded-xl bg-violet-50 px-3 py-2.5">
+          <div className="mt-4 flex items-center gap-2 rounded-xl bg-orange-50 px-3 py-2.5">
             <Info className="h-4 w-4 text-primary" />
             <p className="flex-1 text-[11px] text-gray-400">以上为预估费用，实际花费可能因个人消费习惯有所不同哦~</p>
           </div>

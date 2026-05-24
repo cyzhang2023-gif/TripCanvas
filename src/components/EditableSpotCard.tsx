@@ -85,7 +85,7 @@ export function EditableSpotCard({
           e.stopPropagation();
           onEdit();
         }}
-        className="cursor-pointer rounded-xl transition-all hover:bg-violet-50/50"
+        className="cursor-pointer rounded-xl transition-all hover:bg-[#fff0ed]/50"
         title="点击编辑"
       >
         {children}

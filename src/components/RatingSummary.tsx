@@ -62,7 +62,7 @@ export function RatingSummary({
             {topTags.map(([tag]) => (
               <span
                 key={tag}
-                className="rounded-full bg-violet-50 px-1.5 py-px text-[8px] font-medium text-violet-600"
+                className="rounded-full bg-[#fff0ed] px-1.5 py-px text-[8px] font-medium text-[#d4532e]"
               >
                 {tag}
               </span>
@@ -120,10 +120,10 @@ function RatingBreakdown({
               {allTags.map(([tag, count]) => (
                 <span
                   key={tag}
-                  className="flex items-center gap-1 rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-medium text-violet-700"
+                  className="flex items-center gap-1 rounded-full bg-[#fff0ed] px-2.5 py-1 text-[11px] font-medium text-[#c44a2d]"
                 >
                   {tag}
-                  <span className="rounded-full bg-violet-200 px-1.5 py-px text-[9px] font-bold text-violet-800">
+                  <span className="rounded-full bg-[#e8614d]/20 px-1.5 py-px text-[9px] font-bold text-[#b33f24]">
                     {count}
                   </span>
                 </span>

@@ -84,9 +84,9 @@ const styleOptions = [
   { value: "都市", label: "都市", icon: Building2, bg: "from-blue-50 to-indigo-50", border: "border-blue-200" },
   { value: "古迹", label: "古迹/历史", icon: Landmark, bg: "from-amber-50 to-orange-50", border: "border-amber-200" },
   { value: "美食", label: "美食", icon: UtensilsCrossed, bg: "from-orange-50 to-red-50", border: "border-orange-200" },
-  { value: "冒险", label: "冒险/户外", icon: Compass, bg: "from-indigo-50 to-purple-50", border: "border-indigo-200" },
+  { value: "冒险", label: "冒险/户外", icon: Compass, bg: "from-indigo-50 to-[#fff0ed]", border: "border-indigo-200" },
   { value: "购物", label: "购物", icon: ShoppingBag, bg: "from-pink-50 to-rose-50", border: "border-pink-200" },
-  { value: "文艺", label: "文艺/艺术", icon: Palette, bg: "from-purple-50 to-violet-50", border: "border-purple-200" },
+  { value: "文艺", label: "文艺/艺术", icon: Palette, bg: "from-[#fff0ed] to-[#fff0ed]", border: "border-[#e8614d]/20" },
 ];
 
 const daysOptions = [
@@ -275,7 +275,7 @@ function QuizPage() {
             className="h-full rounded-full transition-all duration-500 ease-out"
             style={{
               width: `${((step + 1) / TOTAL_STEPS) * 100}%`,
-              background: "linear-gradient(90deg, #6366f1 0%, #818cf8 100%)",
+              background: "linear-gradient(90deg, #d4532e 0%, #e8614d 100%)",
             }}
           />
         </div>
@@ -373,7 +373,7 @@ function QuizPage() {
                 <button
                   onClick={goNext}
                   className="pressable mt-4 flex w-full items-center justify-center gap-1 rounded-2xl py-3 text-[15px] font-bold text-white shadow-lg shadow-primary/25"
-                  style={{ background: "linear-gradient(135deg, #6366f1 0%, #818cf8 100%)" }}
+                  style={{ background: "linear-gradient(135deg, #d4532e 0%, #e8614d 100%)" }}
                 >
                   下一步
                   <ChevronRight className="h-4 w-4" />
@@ -551,7 +551,7 @@ function QuestionScreen({
 
 /* ─── Badge colors by card index ─── */
 const badgeColors = [
-  "linear-gradient(135deg, #7c6cff, #a78bfa)", // 01 purple
+  "linear-gradient(135deg, #e8614d, #f09080)", // 01 coral
   "linear-gradient(135deg, #34d399, #10b981)", // 02 green
   "linear-gradient(135deg, #34d399, #10b981)", // 03 green
   "linear-gradient(135deg, #fb923c, #f97316)", // 04 orange
@@ -607,7 +607,7 @@ function ResultsView({
       <div
         className="flex items-center gap-2.5 rounded-xl px-3 py-2.5"
         style={{
-          background: "linear-gradient(135deg, #7c6cff 0%, #a78bfa 50%, #c4b5fd 100%)",
+          background: "linear-gradient(135deg, #e8614d 0%, #f09080 50%, #f5b8aa 100%)",
         }}
       >
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/20 backdrop-blur">

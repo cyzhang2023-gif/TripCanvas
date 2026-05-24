@@ -87,7 +87,7 @@ function getCost(destName: string, routeTitle: string, region: string): Record<B
 
 const catList: { icon: LucideIcon; label: string; color: string; bg: string }[] = [
   { icon: Plane, label: "往返交通", color: "text-sky-600", bg: "bg-sky-100" },
-  { icon: Hotel, label: "住宿", color: "text-violet-600", bg: "bg-violet-100" },
+  { icon: Hotel, label: "住宿", color: "text-[#d4532e]", bg: "bg-[#fff0ed]" },
   { icon: Utensils, label: "餐饮", color: "text-amber-600", bg: "bg-amber-100" },
   { icon: Bus, label: "当地交通", color: "text-emerald-600", bg: "bg-emerald-100" },
   { icon: Ticket, label: "景点门票", color: "text-rose-500", bg: "bg-rose-100" },
@@ -221,7 +221,7 @@ function BudgetPage() {
 
           {/* Total */}
           <section className="rounded-2xl p-4 text-white shadow-lg overflow-hidden relative"
-            style={{ background: "linear-gradient(135deg, #7c6dff 0%, #5b45f3 50%, #4a36ef 100%)" }}>
+            style={{ background: "linear-gradient(135deg, #e8614d 0%, #d4532e 50%, #c44a2d 100%)" }}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <Wallet className="h-3.5 w-3.5" />
@@ -263,7 +263,7 @@ function BudgetPage() {
                       <span className="text-[11px] font-medium">{label}</span>
                       <div className="mt-0.5 h-1.5 rounded-full bg-gray-100 overflow-hidden">
                         <div className="h-full rounded-full transition-all duration-500"
-                          style={{ width: `${pct}%`, background: "linear-gradient(90deg, #6d61ff, #4a36ef)" }} />
+                          style={{ width: `${pct}%`, background: "linear-gradient(90deg, #e8614d, #c44a2d)" }} />
                       </div>
                     </div>
                     <span className="text-[12px] font-bold shrink-0">¥{amount.toLocaleString()}</span>

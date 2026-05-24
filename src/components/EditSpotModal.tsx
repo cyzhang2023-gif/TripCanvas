@@ -88,7 +88,7 @@ export function EditSpotModal({ spot, onSave, onClose }: EditSpotModalProps) {
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-100"
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition focus:border-[#e8614d]/80 focus:bg-white focus:ring-2 focus:ring-[#fff0ed]"
               placeholder="地点名称"
             />
           </div>
@@ -102,7 +102,7 @@ export function EditSpotModal({ spot, onSave, onClose }: EditSpotModalProps) {
               value={desc}
               onChange={(e) => setDesc(e.target.value)}
               rows={2}
-              className="w-full resize-none rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-[13px] text-slate-700 outline-none transition focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-100"
+              className="w-full resize-none rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-[13px] text-slate-700 outline-none transition focus:border-[#e8614d]/80 focus:bg-white focus:ring-2 focus:ring-[#fff0ed]"
               placeholder="简短描述..."
             />
           </div>
@@ -115,7 +115,7 @@ export function EditSpotModal({ spot, onSave, onClose }: EditSpotModalProps) {
             <input
               value={time}
               onChange={(e) => setTime(e.target.value)}
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-[14px] text-slate-900 outline-none transition focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-100"
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-[14px] text-slate-900 outline-none transition focus:border-[#e8614d]/80 focus:bg-white focus:ring-2 focus:ring-[#fff0ed]"
               placeholder="例如: 09:00"
             />
           </div>
@@ -132,7 +132,7 @@ export function EditSpotModal({ spot, onSave, onClose }: EditSpotModalProps) {
                   onClick={() => setCategory(cat)}
                   className={`rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition-all ${
                     category === cat
-                      ? "bg-violet-600 text-white shadow-md shadow-violet-200"
+                      ? "bg-[#d4532e] text-white shadow-md shadow-[#e8614d]/20"
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >
@@ -154,7 +154,7 @@ export function EditSpotModal({ spot, onSave, onClose }: EditSpotModalProps) {
               step={15}
               value={durationMin}
               onChange={(e) => setDurationMin(Number(e.target.value))}
-              className="w-full accent-violet-600"
+              className="w-full accent-[#d4532e]"
             />
             <div className="mt-1 flex justify-between text-[10px] text-gray-400">
               <span>15分钟</span>
@@ -172,7 +172,7 @@ export function EditSpotModal({ spot, onSave, onClose }: EditSpotModalProps) {
             </button>
             <button
               onClick={handleSave}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 py-3 text-[13px] font-bold text-white shadow-lg shadow-violet-200 transition active:scale-[0.98]"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#d4532e] to-[#d4532e] py-3 text-[13px] font-bold text-white shadow-lg shadow-[#e8614d]/20 transition active:scale-[0.98]"
             >
               <Save className="h-4 w-4" /> 保存
             </button>

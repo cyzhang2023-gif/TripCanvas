@@ -80,7 +80,7 @@ function Profile() {
   };
 
   return (
-    <div className="app-shell bg-[#f5f6fa] pb-28">
+    <div className="app-shell bg-[#faf8f6] pb-28">
       {toast && <Toast msg={toast} onClose={() => setToast("")} />}
 
       {/* Banner */}
@@ -148,7 +148,7 @@ function Profile() {
       {/* Achievement card */}
       <div
         className="mx-4 mt-3 flex items-center gap-3 rounded-2xl p-4 cursor-pointer active:opacity-90"
-        style={{ background: "linear-gradient(135deg, #ede9fe 0%, #e0e7ff 100%)" }}
+        style={{ background: "linear-gradient(135deg, #fff0ed 0%, #fde8e2 100%)" }}
         onClick={() => setShowStats(true)}
       >
         <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-md">
@@ -165,11 +165,11 @@ function Profile() {
           <div className="h-2 w-16 overflow-hidden rounded-full bg-white/60">
             <div
               className="h-full rounded-full transition-all"
-              style={{ width: `${progress}%`, background: "linear-gradient(90deg, #6d61ff, #4a36ef)" }}
+              style={{ width: `${progress}%`, background: "linear-gradient(90deg, #e8614d, #d4432e)" }}
             />
           </div>
           <span className="grid h-7 w-7 place-items-center rounded-full bg-white/60">
-            <ChevronRight className="h-3.5 w-3.5 text-violet-600" />
+            <ChevronRight className="h-3.5 w-3.5 text-[#d4532e]" />
           </span>
         </div>
       </div>
@@ -181,7 +181,7 @@ function Profile() {
           <TravelCard icon={Globe} label="去过的国家" sub={`${countries.size} 个国家`} color="text-blue-500" bg="bg-blue-50" onClick={() => setShowCountries(true)} />
           <TravelCard icon={TrendingUp} label="旅行统计" sub="查看详情" color="text-emerald-500" bg="bg-emerald-50" onClick={() => setShowStats(true)} />
           <TravelCard icon={Bookmark} label="收藏路线" sub={`${favCount} 条路线`} color="text-amber-500" bg="bg-amber-50" onClick={() => nav({ to: "/my-trips" })} />
-          <TravelCard icon={Clock} label="浏览历史" sub={`${trips.length} 条记录`} color="text-violet-500" bg="bg-violet-50" onClick={() => nav({ to: "/my-trips" })} />
+          <TravelCard icon={Clock} label="浏览历史" sub={`${trips.length} 条记录`} color="text-[#e8614d]" bg="bg-[#fff0ed]" onClick={() => nav({ to: "/my-trips" })} />
         </div>
       </div>
 
@@ -214,7 +214,7 @@ function Profile() {
           <button
             onClick={() => { setShowEditProfile(false); showToast("资料已保存"); }}
             className="mt-5 w-full rounded-2xl py-3 text-[13px] font-bold text-white"
-            style={{ background: "linear-gradient(135deg, #6d61ff, #4a36ef)" }}
+            style={{ background: "linear-gradient(135deg, #e8614d, #c44a2d)" }}
           >
             保存
           </button>
@@ -258,7 +258,7 @@ function Profile() {
       {showStats && (
         <Sheet title="旅行统计" onClose={() => setShowStats(false)}>
           <div className="grid grid-cols-2 gap-2.5 py-3">
-            <StatCard label="总行程" value={String(trips.length)} sub="条" color="from-primary to-violet-600" />
+            <StatCard label="总行程" value={String(trips.length)} sub="条" color="from-primary to-[#d4532e]" />
             <StatCard label="总天数" value={String(totalDays)} sub="天" color="from-emerald-500 to-teal-600" />
             <StatCard label="总地点" value={String(totalSpots)} sub="个" color="from-amber-500 to-orange-600" />
             <StatCard label="国家" value={String(countries.size)} sub="个" color="from-sky-500 to-blue-600" />
@@ -279,7 +279,7 @@ function Profile() {
                     <span className="w-10 text-[11px] font-medium">{cat}</span>
                     <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-primary to-violet-500"
+                        className="h-full rounded-full bg-gradient-to-r from-primary to-[#e8614d]"
                         style={{ width: `${Math.round((count / totalSpots) * 100)}%` }}
                       />
                     </div>
@@ -312,7 +312,7 @@ function Profile() {
           <div className="flex flex-col items-center py-6">
             <div
               className="flex h-16 w-16 items-center justify-center rounded-2xl text-white shadow-lg"
-              style={{ background: "linear-gradient(135deg, #6d61ff, #4a36ef)" }}
+              style={{ background: "linear-gradient(135deg, #e8614d, #c44a2d)" }}
             >
               <RouteIcon className="h-8 w-8" />
             </div>
@@ -330,7 +330,7 @@ function Profile() {
         </Sheet>
       )}
 
-      <BottomNav variant="china" />
+      <BottomNav />
     </div>
   );
 }

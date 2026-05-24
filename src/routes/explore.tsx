@@ -59,7 +59,7 @@ const heroImages: Record<string, string> = {
 };
 
 const categories: Category[] = [
-  { key: "hot", label: "热门推荐", icon: Flame, color: "#5b45f3", matcher: () => true },
+  { key: "hot", label: "热门推荐", icon: Flame, color: "#d4532e", matcher: () => true },
   {
     key: "nature",
     label: "自然风光",
@@ -85,7 +85,7 @@ const categories: Category[] = [
     key: "culture",
     label: "文化探索",
     icon: Star,
-    color: "#a855f7",
+    color: "#9b59b6",
     matcher: (r) => r.tags.some((t) => ["文化", "历史", "古城", "寺庙", "世界遗产", "人文", "宗教"].some((k) => t.includes(k))),
   },
   {
@@ -295,7 +295,7 @@ function ExplorePage() {
           <div className="mt-auto pb-6">
             <h1 className="flex items-center gap-2 text-[24px] font-extrabold leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)]">
               {dest ? `${dest} · 热门路线` : (categories.find((c) => c.key === cat)?.label ?? "热门路线")}
-              <MapPin className="h-5 w-5 text-[#8b7aff]" fill="#8b7aff" strokeWidth={2.5} />
+              <MapPin className="h-5 w-5 text-[#e8614d]" fill="#e8614d" strokeWidth={2.5} />
             </h1>
             <p className="mt-1.5 text-[12px] text-white/90 drop-shadow-[0_1px_4px_rgba(0,0,0,0.3)]">
               来自小红书、知乎、马蜂窝等平台的热门攻略
@@ -346,7 +346,7 @@ function ExplorePage() {
                   <ChevronDown className="absolute bottom-2 right-0 h-3 w-3 text-[#22242c]" />
                 )}
                 {active && (
-                  <span className="absolute bottom-0 h-[3px] w-5 rounded-full bg-[#5b45f3]" />
+                  <span className="absolute bottom-0 h-[3px] w-5 rounded-full bg-[#d4532e]" />
                 )}
               </button>
             );
@@ -409,7 +409,7 @@ function ExplorePage() {
         {/* Local guides */}
         <section className="mt-5 pb-4">
           <h2 className="flex items-center gap-1.5 text-[14px] font-bold text-[#1d2029]">
-            <Star className="h-4 w-4 text-[#6b56ff]" fill="#6b56ff" /> 本地人推荐
+            <Star className="h-4 w-4 text-[#d4532e]" fill="#d4532e" /> 本地人推荐
           </h2>
           <div className="mt-2 flex gap-2 overflow-x-auto scrollbar-none">
             {localGuides.map((g) => (
@@ -422,7 +422,7 @@ function ExplorePage() {
               >
                 <span className="relative shrink-0">
                   <img src={g.avatar} alt={g.name || "达人头像"} className="h-8 w-8 rounded-full object-cover" loading="lazy" />
-                  <Check className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-[#5b45f3] p-[1px] text-white" />
+                  <Check className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-[#d4532e] p-[1px] text-white" />
                 </span>
                 <span className="min-w-0">
                   <span className="block truncate text-[10px] font-bold text-[#252834]">
@@ -455,7 +455,7 @@ function Pill({ label, active, onClick }: { label: string; active: boolean; onCl
       onClick={onClick}
       className={`pressable flex shrink-0 items-center gap-0.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold leading-none ${
         active
-          ? "border-[#6b56ff] bg-[#f4f1ff] text-[#5b45f3]"
+          ? "border-[#e8614d] bg-[#fff0ed] text-[#d4532e]"
           : "border-transparent bg-[#f5f5f8] text-[#313542]"
       }`}
     >
@@ -490,7 +490,7 @@ function RouteCard({
     <article className="grid grid-cols-[30%_1fr] gap-2 rounded-[16px] bg-white pr-1 shadow-[0_8px_24px_rgba(38,43,70,.08)]">
       <div className="relative h-[104px] overflow-hidden rounded-[16px]">
         <Img src={route.cover} alt={route.title} wrapperClass="h-full w-full" className="h-full w-full object-cover" />
-        <span className="absolute left-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#5b45f3] shadow-sm">
+        <span className="absolute left-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#d4532e] shadow-sm">
           {rank}
         </span>
       </div>
@@ -500,7 +500,7 @@ function RouteCard({
             {route.title}
           </h3>
           {rank === 1 && (
-            <span className="shrink-0 rounded bg-[#f6f1ff] px-1 py-px text-[8px] font-bold text-[#6b56ff]">
+            <span className="shrink-0 rounded bg-[#fff0ed] px-1 py-px text-[8px] font-bold text-[#d4532e]">
               热门
             </span>
           )}
@@ -515,7 +515,7 @@ function RouteCard({
             {route.tags.slice(0, 4).map((t) => (
               <span
                 key={t}
-                className={`rounded-full px-2 py-[2px] text-[9px] font-bold ${t === "小红书精选" ? "bg-gradient-to-r from-[#ff2442] to-[#ff6075] text-white" : "bg-[#f3f1ff] text-[#6554e8]"}`}
+                className={`rounded-full px-2 py-[2px] text-[9px] font-bold ${t === "小红书精选" ? "bg-gradient-to-r from-[#ff2442] to-[#ff6075] text-white" : "bg-[#fff0ed] text-[#c44a2d]"}`}
               >
                 {t}
               </span>
@@ -543,7 +543,7 @@ function RouteCard({
               type="button"
               onClick={(e) => { e.stopPropagation(); onFork(); }}
               disabled={forking}
-              className="pressable flex h-[26px] items-center justify-center gap-1 rounded-full border border-violet-300 bg-violet-50 px-2.5 text-[10px] font-bold text-violet-600 disabled:opacity-70"
+              className="pressable flex h-[26px] items-center justify-center gap-1 rounded-full border border-[#e8614d]/30 bg-[#fff0ed] px-2.5 text-[10px] font-bold text-[#d4532e] disabled:opacity-70"
               title="收藏为我的行程"
             >
               {forking ? <Loader2 className="h-3 w-3 animate-spin" /> : <GitBranch className="h-3 w-3" />}
@@ -553,7 +553,7 @@ function RouteCard({
               type="button"
               onClick={onOpen}
               disabled={adding}
-              className="pressable flex h-[26px] items-center justify-center rounded-full bg-gradient-to-r from-[#735cff] to-[#5b45f3] px-3 text-[10px] font-bold text-white shadow-[0_8px_18px_rgba(91,69,243,.22)] disabled:opacity-70"
+              className="pressable flex h-[26px] items-center justify-center rounded-full bg-gradient-to-r from-[#e8614d] to-[#d4532e] px-3 text-[10px] font-bold text-white shadow-[0_8px_18px_rgba(228,97,77,.22)] disabled:opacity-70"
             >
               {adding ? <Loader2 className="h-3 w-3 animate-spin" /> : added ? "已加入" : "查看详情"}
             </button>
